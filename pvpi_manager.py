@@ -190,7 +190,7 @@ def main():
     parser.add_argument("--port", default="/dev/ttyS0", help="Serial port to STM32")
     parser.add_argument("--baud", type=int, default=115200, help="Baud rate")
     parser.add_argument("--log_period", type=int, default=5, help="Measurement interval (minutes)")
-    parser.add_argument("--target", type=str, default="20:00", help="Target time in HH:MM")
+    parser.add_argument("--shutdown_time", type=str, default="20:00", help="Shutdown time in HH:MM")
     parser.add_argument("--off_delay", type=int, default=20, help="Shutdown delay (seconds)")
     parser.add_argument("--low_bat_volt", type=float, default=12, help="Shutdown voltage")
     parser.add_argument("--alarm", type=str, default="08:00", help="Wakeup alarm in HH:MM")
@@ -204,10 +204,10 @@ def main():
         datefmt="%Y-%m-%d %H:%M:%S"
     )
 
-    target_hour, target_min = map(int, args.target.split(":"))
+    shutdown_time_hour, shutdown_time_min = map(int, args.shutdown_time.split(":"))
     alarm_hour, alarm_min = map(int, args.alarm.split(":"))
 
-    target_time = time(target_hour, target_min)
+    shutdown_time = time(shutdown_time_hour, shutdown_time_min)
     wakeup_alarm = time(alarm_hour, alarm_min)
 
     pvpi = None
@@ -247,7 +247,7 @@ def main():
             logging.info(f"Battery: {bat_v} V, {bat_c} A")
             logging.info(f"PV: {pv_v} V, {pv_c} A")
 
-            if datetime.now().time() >= target_time:
+            if datetime.now().time() >= shutdown_time:
                 logging.info(f"Shutdown Time!")
                 break
 

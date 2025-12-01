@@ -1,0 +1,18 @@
+[Unit]
+Description=PV PI Manager Service
+After=multi-user.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/Documents/PVPI_Manager
+ExecStart=/bin/bash /home/pi/Documents/PVPI_Manager/pvpi_run.sh
+StandardOutput=append:/var/log/pvpi_manager_out.log
+StandardError=append:/var/log/pvpi_manager_error.log
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+
+

@@ -156,6 +156,22 @@ class PvPiManager:
             logging.warning(f"Failed to parse STM32 time response '{resp}': {e}")
             return None
 
+    def set_system_time(self):
+        """Set Raspberry Pi system clock from datetime object."""
+        dt = self.get_mcu_time()
+        time_str = dt.strftime("%Y-%m-%d %H:%M:%S")
+
+        try:
+            # Needs root privileges!
+            subprocess.run(
+                ["sudo", "date", "-s", time_str],
+                check=True
+            )
+            return True
+        except Exception as e:
+            logging.error(f"Failed to set system time: {e}")
+            return False
+
     def set_alarm(self, alarm_time: time):
         """Set STM32 alarm using a datetime time object."""
         cmd = f"SET_ALARM,{alarm_time.hour},{alarm_time.minute},{alarm_time.second}"
@@ -190,11 +206,15 @@ def main():
     parser.add_argument("--port", default="/dev/ttyS0", help="Serial port to STM32")
     parser.add_argument("--baud", type=int, default=115200, help="Baud rate")
     parser.add_argument("--log_period", type=int, default=5, help="Measurement interval (minutes)")
-    parser.add_argument("--shutdown_time", type=str, default="20:00", help="Shutdown time in HH:MM")
+    parser.add_argument("--shutdown_time", type=str, default="22:00", help="Shutdown time in HH:MM")
     parser.add_argument("--off_delay", type=int, default=20, help="Shutdown delay (seconds)")
-    parser.add_argument("--low_bat_volt", type=float, default=12, help="Shutdown voltage")
-    parser.add_argument("--alarm", type=str, default="08:00", help="Wakeup alarm in HH:MM")
+    parser.add_argument("--low_bat_volt", type=float, default=12.5, help="Shutdown voltage")
+    parser.add_argument("--wakeup_time", type=str, default="08:00", help="Wakeup alarm in HH:MM")
     parser.add_argument("--log", default="INFO", help="Logging level (DEBUG, INFO, WARNING, ERROR)")
+    parser.add_argument("--schedule_time", action='store_true', help="Use the shutdown and wakeup time")
+    parser.add_argument("--enable_watchdog", action='store_true', help="Enable the power watchdog")
+    parser.add_argument("--time_pi2mcu", action='store_true', help="Set MCU time from system time")
+    parser.add_argument("--time_mcu2pi", action='store_true', help="Set system time from MCU")
 
     args = parser.parse_args()
 
@@ -205,10 +225,13 @@ def main():
     )
 
     shutdown_time_hour, shutdown_time_min = map(int, args.shutdown_time.split(":"))
-    alarm_hour, alarm_min = map(int, args.alarm.split(":"))
+    alarm_hour, alarm_min = map(int, args.wakeup_time.split(":"))
 
     shutdown_time = time(shutdown_time_hour, shutdown_time_min)
     wakeup_alarm = time(alarm_hour, alarm_min)
+
+    logging.info(f"Shutdown Time: {shutdown_time.strftime('%H:%M:%S')}")
+    logging.info(f"Wakeup Time: {wakeup_alarm.strftime('%H:%M:%S')}")
 
     pvpi = None
     interrupted = False
@@ -229,15 +252,33 @@ def main():
 
     try:
         pvpi = PvPiManager(port=args.port, baudrate=args.baud)
-        pvpi.set_watchdog(2 * args.log_period)
-        pvpi.get_mcu_time()
-        pvpi.set_mcu_time()
-
         logging.info("Checking connection...")
+        logging.info(f"Alive: {pvpi.get_alive()}")
+        
+        if args.time_mcu2pi:
+            pvpi.set_system_time()
+
+        if args.time_pi2mcu:
+            pvpi.set_mcu_time()
+
+        #Start delay
+        logging.info(f"30s Startup delay")
+        pytime.sleep(30)
+        logging.info(f"#############")
+        logging.info(f"Starting...")
+        logging.info(f"Log period: {args.log_period} minutes")
+        logging.info(f"Watchdog: {'On' if args.enable_watchdog else 'Off'}")
+        logging.info(f"Time Schedule: {'On' if args.schedule_time else 'Off'}")
+
+        if args.enable_watchdog:
+            pvpi.set_watchdog(2 * args.log_period)
+
         while True:
+            logging.info(f"#############")
             logging.info(f"Alive: {pvpi.get_alive()}")
 
             pvpi.get_mcu_time()
+            logging.info(f"System time: {datetime.now().strftime('%y-%m-%d %H:%M:%S')}")
 
             bat_v = pvpi.get_battery_voltage()
             bat_c = pvpi.get_battery_current()
@@ -263,14 +304,15 @@ def main():
         logging.error(f"Unexpected error: {e}")
         graceful_exit()
     finally:
-        if interrupted:
+       if not interrupted:
             pvpi.set_alarm(wakeup_alarm)
             pvpi.stop_watchdog()
             pvpi.power_off(args.off_delay)
             logging.info("SHUTDOWN NOW")
             pytime.sleep(1)
             os.system("sudo shutdown now")
-
+            while True:
+                pytime.sleep(100)
 
 if __name__ == "__main__":
     main()

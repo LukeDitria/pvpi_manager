@@ -1,6 +1,6 @@
 import serial
 import time as pytime
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 import os
 import argparse
 import logging
@@ -45,26 +45,11 @@ def main():
     pvpi = None
     interrupted = False
 
-    def graceful_exit(sig=None, frame=None):
-        nonlocal interrupted
-
-        """Handle Ctrl+C or SIGTERM cleanly."""
-        logging.warning("Interrupt received — cleaning up...")
-        if pvpi:
-            pvpi.stop_watchdog()
-            pvpi.disconnect()
-            interrupted = True
-        logging.info("Exiting safely.")
-        sys.exit(0)
-
-    # Register signal handlers for safe cleanup
-    signal.signal(signal.SIGINT, graceful_exit)
-    signal.signal(signal.SIGTERM, graceful_exit)
-
     try:
         pvpi = PvPiManager(port=args.port, baudrate=args.baud)
         logging.info("Checking connection...")
         logging.info(f"Alive: {pvpi.get_alive()}")
+        
         _ = pvpi.get_mcu_time()
         
         if args.time_mcu2pi:
@@ -85,7 +70,7 @@ def main():
         if args.enable_watchdog:
             pvpi.set_watchdog(2 * args.log_period)
 
-        prev_time = datetime.now()
+        prev_time = datetime.now() - timedelta(hours=1)
         while True:
             curr_time = datetime.now()
             if curr_time.time() >= shutdown_time and args.schedule_time:
@@ -105,9 +90,11 @@ def main():
                 bat_c = pvpi.get_battery_current()
                 pv_v = pvpi.get_pv_voltage()
                 pv_c = pvpi.get_pv_current()
+                temperature = pvpi.get_board_temp()
 
                 logging.info(f"Battery: {bat_v} V, {bat_c} A")
                 logging.info(f"PV: {pv_v} V, {pv_c} A")
+                logging.info(f"PV PI Temp: {temperature}C")
 
                 if bat_v <= args.low_bat_volt:
                     logging.info(f"Shutdown Voltage!")
@@ -116,10 +103,26 @@ def main():
             pytime.sleep(30)
 
     except KeyboardInterrupt:
-        graceful_exit()
+        """Handle Ctrl+C or SIGTERM cleanly."""
+        logging.warning("Interrupt received — cleaning up...")
+        if pvpi:
+            pvpi.stop_watchdog()
+            pvpi.disconnect()
+            interrupted = True
+        logging.info("Exiting safely.")
+        exit
+
     except Exception as e:
         logging.error(f"Unexpected error: {e}")
-        graceful_exit()
+        """Handle Ctrl+C or SIGTERM cleanly."""
+        logging.warning("Interrupt received — cleaning up...")
+        if pvpi:
+            pvpi.stop_watchdog()
+            pvpi.disconnect()
+            interrupted = True
+        logging.info("Exiting safely.")
+        exit
+
     finally:
        if not interrupted:
             if args.schedule_time:

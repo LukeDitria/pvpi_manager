@@ -137,6 +137,22 @@ class PvPiManager:
         logging.info(f"Set MCU to System time: {now.strftime('%y-%m-%d %H:%M:%S')}")
         return resp
 
+    def get_board_temp(self):
+        """Get the PVPI Board temperature"""
+        resp = self._send_command("GET_TEMP")
+        if not resp:
+            return None
+
+        if not resp.split(",")[0] == "TEMP":
+            return None
+
+        try:
+            temperature = int(resp.split(",")[1])
+            return temperature
+        except Exception as e:
+            logging.warning(f"Failed to PV PI Temperature '{resp}': {e}")
+            return None
+
     def get_mcu_time(self):
         """Get RTC time from STM32 and return datetime."""
         resp = self._send_command("GET_TIME")

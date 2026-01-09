@@ -12,8 +12,6 @@ from pvpi_manager import PvPiManager
 # ---------------------- CLI + Main ---------------------- #
 def main():
     parser = argparse.ArgumentParser(description="PV PI Manager CLI")
-    parser.add_argument("--port", default="/dev/ttyS0", help="Serial port to STM32")
-    parser.add_argument("--baud", type=int, default=115200, help="Baud rate")
     parser.add_argument("--log_period", type=int, default=5, help="Measurement interval (minutes)")
     parser.add_argument("--shutdown_time", type=str, default="22:00", help="Shutdown time in HH:MM")
     parser.add_argument("--off_delay", type=int, default=20, help="Shutdown delay (seconds)")
@@ -46,7 +44,10 @@ def main():
     interrupted = False
 
     try:
-        pvpi = PvPiManager(port=args.port, baudrate=args.baud)
+        logging.info(f"Wait for UART server startup")
+        pytime.sleep(5)
+
+        pvpi = PvPiManager()
         logging.info("Checking connection...")
         logging.info(f"Alive: {pvpi.get_alive()}")
         
@@ -59,13 +60,13 @@ def main():
             pvpi.set_mcu_time()
 
         #Start delay
-        logging.info(f"30s Startup delay")
-        pytime.sleep(30)
-        logging.info(f"#############")
-        logging.info(f"Starting...")
+        logging.info(f"20s Startup delay")
+        pytime.sleep(20)
+        logging.info(f"######STARTING#######")
         logging.info(f"Log period: {args.log_period} minutes")
         logging.info(f"Watchdog: {'On' if args.enable_watchdog else 'Off'}")
         logging.info(f"Time Schedule: {'On' if args.schedule_time else 'Off'}")
+        logging.info(f"######BEGIN#######")
 
         if args.enable_watchdog:
             pvpi.set_watchdog(2 * args.log_period)

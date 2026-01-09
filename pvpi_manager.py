@@ -6,27 +6,39 @@ import argparse
 import logging
 import signal
 import sys
+import zmq
 
 
 class PvPiManager:
     """High-level UART interface for communicating with the PV PI"""
 
-    def __init__(self, port="/dev/ttyS0", baudrate=115200, timeout=2):
-        self.port = port
-        self.baudrate = baudrate
+    def __init__(self, timeout=2):
         self.timeout = timeout
         self.ser = None
         self.connect()
 
     # ---------------------- Connection Management ---------------------- #
     def connect(self):
-        """Open the serial connection to the STM32."""
+        """Open the connection to the UART Server."""
+        # try:
+        #     self.ser = serial.Serial(self.port, self.baudrate, timeout=self.timeout)
+        #     pytime.sleep(2)  # Give MCU time to reset after opening
+        #     logging.info(f"Connected to STM32 on {self.port} @ {self.baudrate} baud")
+        # except serial.SerialException as e:
+        #     raise ConnectionError(f"Failed to open serial port {self.port}: {e}")
+
+        ZMQ_PORT = "tcp://127.0.0.1:5555"
+
         try:
-            self.ser = serial.Serial(self.port, self.baudrate, timeout=self.timeout)
-            pytime.sleep(2)  # Give MCU time to reset after opening
-            logging.info(f"Connected to STM32 on {self.port} @ {self.baudrate} baud")
-        except serial.SerialException as e:
-            raise ConnectionError(f"Failed to open serial port {self.port}: {e}")
+            self.context = zmq.Context()
+            logging.info("Connecting to UART server...")
+            # The DEALER socket is used for asynchronous communication with a ROUTER
+            self.socket = self.context.socket(zmq.DEALER)
+            # Give the client a unique identity (optional but good practice)
+            self.socket.setsockopt(zmq.IDENTITY, b"client_" + str(pytime.time()).encode())
+            self.socket.connect(ZMQ_PORT)
+        except Exception as e:
+            raise ConnectionError(f"Failed to connect to UART Server {ZMQ_PORT}: {e}")
 
     def disconnect(self):
         """Close the serial connection."""
@@ -35,19 +47,35 @@ class PvPiManager:
             logging.info("Serial connection closed")
 
     # ---------------------- Command Interface ---------------------- #
-    def _send_command(self, command, expect_response=True):
-        """Send a command and return the STM32's response if available."""
-        if not self.ser or not self.ser.is_open:
-            raise ConnectionError("Serial port not open")
+    # def _send_command(self, command, expect_response=True):
+    #     """Send a command and return the STM32's response if available."""
+    #     if not self.ser or not self.ser.is_open:
+    #         raise ConnectionError("Serial port not open")
 
-        cmd = command.strip() + "\n"
-        self.ser.write(cmd.encode("utf-8"))
+    #     cmd = command.strip() + "\n"
+    #     self.ser.write(cmd.encode("utf-8"))
 
-        if not expect_response:
+    #     if not expect_response:
+    #         return None
+
+    #     response = self.ser.readline().decode("utf-8").strip()
+    #     return response
+
+    def _send_command(self, data_request):
+        try:
+            # Send the request
+            # self.socket.send_string(data_request)
+            self.socket.send_multipart([b"send_command", data_request.encode('utf-8')])
+            
+            # Wait for the reply from the server
+            reply_parts = self.socket.recv_multipart()
+            reply = reply_parts[1].decode('utf-8')
+                        
+            return reply
+
+        except Exception as e:
+            logging.info(f"An error occurred in the client: {e}")
             return None
-
-        response = self.ser.readline().decode("utf-8").strip()
-        return response
 
     # ---------------------- Helper Commands ---------------------- #
     def get_alive(self):
@@ -128,15 +156,6 @@ class PvPiManager:
             logging.error(f"Error stopping watchdog: {e}")
             return False
 
-    # ---------------------- Time Sync Commands ---------------------- #
-    def set_mcu_time(self):
-        """Send current system time to STM32 RTC."""
-        now = datetime.now()
-        cmd = f"SET_TIME,{now.year % 100},{now.month},{now.day},{now.hour},{now.minute},{now.second}"
-        resp = self._send_command(cmd)
-        logging.info(f"Set MCU to System time: {now.strftime('%y-%m-%d %H:%M:%S')}")
-        return resp
-
     def get_board_temp(self):
         """Get the PVPI Board temperature"""
         resp = self._send_command("GET_TEMP")
@@ -152,6 +171,15 @@ class PvPiManager:
         except Exception as e:
             logging.warning(f"Failed to PV PI Temperature '{resp}': {e}")
             return None
+
+    # ---------------------- Time Sync Commands ---------------------- #
+    def set_mcu_time(self):
+        """Send current system time to STM32 RTC."""
+        now = datetime.now()
+        cmd = f"SET_TIME,{now.year % 100},{now.month},{now.day},{now.hour},{now.minute},{now.second}"
+        resp = self._send_command(cmd)
+        logging.info(f"Set MCU to System time: {now.strftime('%y-%m-%d %H:%M:%S')}")
+        return resp
 
     def get_mcu_time(self):
         """Get RTC time from STM32 and return datetime."""

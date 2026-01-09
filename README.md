@@ -24,3 +24,8 @@ sudo systemctl stop pvpi_manager.service
 sudo systemctl restart pvpi_manager.service
 ```
 It's a good idea to stop the service running if you are still setting up the Pi!
+
+To view the live output from the PV PI Manager
+```commandline
+journalctl -u pvpi_manager.service -f
+```

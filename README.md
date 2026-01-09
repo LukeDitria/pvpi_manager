@@ -1,9 +1,9 @@
 # PVPI_Manager
 Automatic device manager for the PVPI <br>
 TODO:<br>
-Create automated setup method
-Create manual UART communication examples
-Create config json method
+Create automated setup method<br>
+Create manual UART communication examples<br>
+Create config json method<br>
 
 
 ## Install pip requirements including system-wide packages
@@ -51,5 +51,9 @@ To view the live output from the PV PI Manager
 journalctl -u pvpi_manager.service -f
 ```
 
-## Set the PV PI STM32 RTC time
+## Manually Set the PV PI STM32 RTC time to the SBC System time
+You'll only need to do this once if you have a RTC backup battery
+```commandline
+./set_pvpi_time.sh
+```
 

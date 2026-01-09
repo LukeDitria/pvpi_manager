@@ -1,0 +1,17 @@
+[Unit]
+Description=UART server for communication with the PV PI
+After=multi-user.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/Documents/PVPI_Manager
+ExecStart=/bin/bash /home/pi/Documents/PVPI_Manager/uart_server.sh
+
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+
+

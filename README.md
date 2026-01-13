@@ -90,6 +90,7 @@ Make sure that the uart_server.service is running first!
 ```commandline
 ./set_pvpi_time.sh
 ```
+This will return the current time from the PV PI which should match the system time (give or take a second or so).<br>
 If you don't have a RTC backup battery then the RTC will loose time whenever the main battery power is disconnected.<br>
 If you are relying on the the Raspberry Pi's (or other SBC) system time for time-keeping, then you should set time_pi2mcu to true in the config.json.
 

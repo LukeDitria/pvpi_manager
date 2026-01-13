@@ -12,14 +12,21 @@ CONFIG_PATH = Path("config.json")
 
 class AppConfig(BaseSettings):
     log_period: int = 5
-    shutdown_time: time = time(22, 0)
     off_delay: int = 20
     low_bat_volt: float = 12.5
-    wakeup_time: time = time(8, 0)
-    uart_port: str = "/dev/ttyAMA0"
 
     schedule_time: bool = False
+    shutdown_time: time = time(22, 0)
+    wakeup_time: time = time(8, 0)
+
+    uart_port: str = "/dev/ttyAMA0"
+
+    log_pvpi_stats: bool = False
+    data_log_path: str = "logs"
+    log_last_days: int = 7
+
     enable_watchdog: bool = False
+
     time_pi2mcu: bool = False
     time_mcu2pi: bool = False
 

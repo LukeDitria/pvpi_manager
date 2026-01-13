@@ -5,11 +5,11 @@ import os
 import logging
 import signal
 import sys
+import utils
 
 from pvpi_manager import PvPiManager
 from pvpi_config import AppConfig
 
-# ---------------------- CLI + Main ---------------------- #
 def main():
 
     config = AppConfig()
@@ -44,6 +44,10 @@ def main():
 
         if config.time_pi2mcu:
             pvpi.set_mcu_time()
+
+        if config.log_pvpi_stats:
+            logging.info(f"Logging PV PI statistics")
+            stats_data_logger = utils.DailyCSVLogger(config.data_log_path, config.log_last_days)
 
         #Start delay
         logging.info(f"20s Startup delay")
@@ -83,6 +87,13 @@ def main():
                 logging.info(f"Battery: {bat_v} V, {bat_c} A")
                 logging.info(f"PV: {pv_v} V, {pv_c} A")
                 logging.info(f"PV PI Temp: {temperature}C")
+
+                if config.log_pvpi_stats:
+                    stats_data_logger.log_stats(
+                        bat_v, bat_c,
+                        pv_v, pv_c,
+                        temperature
+                    )
 
                 if bat_v <= config.low_bat_volt:
                     logging.info(f"Shutdown Voltage!")

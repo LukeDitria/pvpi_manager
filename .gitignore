@@ -1,0 +1,5 @@
+# pvpi data logs
+logs/
+
+# Local config
+config.json

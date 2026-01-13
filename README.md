@@ -43,16 +43,16 @@ This way multiple different processes can send and receive commands to/from the 
 This is the main PV PI manager service. It loads the values in the config.json and performs system management as per the specified configurations. 
 
 ## Controlling System services
-Both of these system services are set to start runnig straight away during the setup step.<br>
+Both of these system services are set to start running straight away during the setup step.<br>
 You can control either service with the following commands: "status", "stop", "start" and "restart".<br>
 For example:
 ```commandline
 sudo systemctl status pvpi_manager.service
-sudo systemctl start pvpi_manager.service
 sudo systemctl stop pvpi_manager.service
+sudo systemctl start pvpi_manager.service
 sudo systemctl restart pvpi_manager.service
 ```
-It's a good idea to stop the service running if you are still setting up the Pi!
+It's a good idea to stop the pvpi_manager.service from running if you are still setting up the Pi!
 
 ## Viewing System service outputs
 To view the output from either service use journalctl.
@@ -70,7 +70,7 @@ journalctl -u pvpi_manager.service -e
 ## Change UART
 If you run the command
 ```commandline
-journalctl -u uart_server.service -f
+journalctl -u uart_server.service -e
 ```
 And see that the UART server cannot find the PV PI, then either UART has not been enabled or the wrong location is defined in the config.json.<br>
 To update the port location, change the "uart_port" parameter of the config.json file to your UART port location.<br>
@@ -90,6 +90,6 @@ Make sure that the uart_server.service is running first!
 ```commandline
 ./set_pvpi_time.sh
 ```
-If you don't have a RTC backup battery then the RTC will loose time whenever the main battery power is diconnected.<br>
-If you are relying on the the Raspberry Pi's (or other SBC) system time, then you should set time_pi2mcu to true in the config.json.
+If you don't have a RTC backup battery then the RTC will loose time whenever the main battery power is disconnected.<br>
+If you are relying on the the Raspberry Pi's (or other SBC) system time for time-keeping, then you should set time_pi2mcu to true in the config.json.
 

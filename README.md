@@ -11,9 +11,7 @@ To setup an install the PV PI on your Raspberry Pi or other SBC login to your de
 Before setting up the PV PI you will need to enable the UART port on your device.<br>
 For the Raspberry Pi and other SBC using the 40pin header the PV PI will use the UART port on pins GPIO 14/15.<br>
 For the Raspberry Pi you can do this via raspi-config.<br>
-You will then need to set the uart_port parameter of the config.json file to the UART port location.<br>
-For the Raspberry Pi 5 etc this is usually /dev/ttyAMA0 <br> 
-For the Raspberry Pi Zero this is usually /dev/ttyS0 <br> 
+By default the PV PI manager tries to use /dev/ttyAMA0, you can change this AFTER setup by modifying the generated config.json file.
 
 ## Activate setup script
 ```commandline
@@ -61,6 +59,16 @@ To view a history of the output from the most recent logs (static output) for ei
 journalctl -u pvpi_manager.service -e
 ```
 
+## Change UART
+If you run the command
+```commandline
+journalctl -u uart_server.service -f
+```
+And see that the UART server cannot find the PV PI, then either UART has not been enabled or the wrong location is defined in the config.json.<br>
+To update the port location, change the "uart_port" parameter of the config.json file to your UART port location.<br>
+For the Raspberry Pi 5 etc this is usually /dev/ttyAMA0 <br> 
+For the Raspberry Pi Zero this is usually /dev/ttyS0 <br> 
+For other SBCs you'll need to consult the device documentation.
 
 ## Manually Set the PV PI STM32 RTC time to the SBC System time
 To sync the time on the PV PI RTC we can send a "set time" command using the PV PI Manager.<br>

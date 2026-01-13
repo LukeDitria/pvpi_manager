@@ -13,12 +13,20 @@ For the Raspberry Pi and other SBC using the 40pin header the PV PI will use the
 For the Raspberry Pi you can do this via raspi-config.<br>
 By default the PV PI manager tries to use /dev/ttyAMA0, you can change this AFTER setup by modifying the generated config.json file.
 
-## Activate setup script
+## git clone this repo
+Navigate to your home diretory and git clone this repo
 ```commandline
+cd --
+git clone https://github.com/LukeDitria/pvpi_manager.git
+```
+
+## Enter the created directory and activate the setup script
+```commandline
+cd pvpi_manager
 chmod +x setup.sh
 ```
 
-## Run setup/install
+## Run the setup/install script
 ```commandline
 ./setup.sh
 ```

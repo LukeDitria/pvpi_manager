@@ -76,7 +76,13 @@ And see that the UART server cannot find the PV PI, then either UART has not bee
 To update the port location, change the "uart_port" parameter of the config.json file to your UART port location.<br>
 For the Raspberry Pi 5 etc this is usually /dev/ttyAMA0 <br> 
 For the Raspberry Pi Zero this is usually /dev/ttyS0 <br> 
-For other SBCs you'll need to consult the device documentation.
+For other SBCs you'll need to consult the device documentation.<br>
+<br>
+Once you have changed the "uart_port" parameter, restart the uart server.
+
+```commandline
+sudo systemctl restart uart_server.service
+```
 
 ## Manually Set the PV PI STM32 RTC time to the SBC System time
 To sync the time on the PV PI RTC we can send a "set time" command using the PV PI Manager.<br>

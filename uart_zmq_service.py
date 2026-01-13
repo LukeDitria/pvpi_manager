@@ -95,14 +95,14 @@ def uart_zmq_service(uart_port="/dev/ttyAMA0"):
                     logging.info("Attempting to re-open serial connection...")
                     try:
                         ser.close()
-                        ser = serial.Serial(UART_PORT, BAUD_RATE, timeout=TIMEOUT_S)
+                        ser = serial.Serial(uart_port, BAUD_RATE, timeout=TIMEOUT_S)
                         logging.info("Serial connection re-established.")
                     except serial.SerialException:
                         logging.error("Failed to re-establish serial connection.")
                         ser = None
 
     except serial.SerialException as e:
-        logging.error(f"Error opening serial port {UART_PORT}: {e}")
+        logging.error(f"Error opening serial port {uart_port}: {e}")
         logging.info("Exiting service. Check your port and permissions (e.g., sudo).")
         sys.exit(1)
     except KeyboardInterrupt:

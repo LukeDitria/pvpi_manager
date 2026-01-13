@@ -48,6 +48,9 @@ class DailyCSVLogger:
 
     def log_row(self, row: list):
         """Append a row to today's CSV file, creating headers if needed."""
+
+        self.cleanup_old_logs()
+
         self.current_file = self._get_today_file()  # update file if day changed
         write_header = not self.current_file.exists() and bool(self.headers)
 

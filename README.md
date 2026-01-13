@@ -7,6 +7,14 @@ Create manual UART communication examples<br>
 # Setup and install
 To setup an install the PV PI on your Raspberry Pi or other SBC login to your device and using the terminal run the following commands!
 
+## Enable UART
+Before setting up the PV PI you will need to enable the UART port on your device.<br>
+For the Raspberry Pi and other SBC using the 40pin header the PV PI will use the UART port on pins GPIO 14/15.<br>
+For the Raspberry Pi you can do this via raspi-config.<br>
+You will then need to set the uart_port parameter of the config.json file to the UART port location.<br>
+For the Raspberry Pi 5 etc this is usually /dev/ttyAMA0 <br> 
+For the Raspberry Pi Zero this is usually /dev/ttyS0 <br> 
+
 ## Activate setup script
 ```commandline
 chmod +x setup.sh

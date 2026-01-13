@@ -1,5 +1,6 @@
 from datetime import time
 from pathlib import Path
+import json
 
 from pydantic_settings import (
     BaseSettings,
@@ -36,6 +37,11 @@ class AppConfig(BaseSettings):
         extra="ignore"
 
     )
+
+    def write_default_config(self):
+        if not CONFIG_PATH.exists():
+            defaults = self.model_dump(mode="json")
+            CONFIG_PATH.write_text(json.dumps(defaults, indent=2))
 
     @classmethod
     def settings_customise_sources(

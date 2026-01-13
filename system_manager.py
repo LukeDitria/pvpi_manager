@@ -13,6 +13,7 @@ from pvpi_config import AppConfig
 def main():
 
     config = AppConfig()
+    config.write_default_config()
 
     logging.basicConfig(
         level=getattr(logging, "INFO", logging.INFO),

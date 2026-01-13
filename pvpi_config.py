@@ -1,9 +1,14 @@
 from datetime import time
+from pathlib import Path
+
 from pydantic_settings import (
     BaseSettings,
     SettingsConfigDict,
     JsonConfigSettingsSource,
 )
+
+
+CONFIG_PATH = Path("config.json")
 
 class AppConfig(BaseSettings):
     log_period: int = 5
@@ -20,7 +25,9 @@ class AppConfig(BaseSettings):
 
     model_config = SettingsConfigDict(
         env_prefix="PVPI_",
-        json_file="config.json",
+        json_file=CONFIG_PATH,
+        extra="ignore"
+
     )
 
     @classmethod

@@ -1,1 +1,3 @@
 zmq
+pydantic
+pydantic-settings

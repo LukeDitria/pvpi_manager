@@ -4,7 +4,7 @@ import time
 import sys
 import json
 import logging
-import argparse
+from pvpi_config import AppConfig
 
 # ZeroMQ configuration
 ZMQ_PORT = "tcp://127.0.0.1:5555"
@@ -119,8 +119,5 @@ def uart_zmq_service(uart_port="/dev/ttyAMA0"):
             logging.info("ZeroMQ context terminated.")
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="PV PI Manager CLI")
-    parser.add_argument("--port", default="/dev/ttyAMA0", help="Serial port to STM32")
-    args = parser.parse_args()
-
-    uart_zmq_service(uart_port=args.port)
+    config = AppConfig()
+    uart_zmq_service(uart_port=config.uart_port)

@@ -1,4 +1,4 @@
 #!/bin/bash
 cd /home/pi/Documents/PVPI_Manager
 source venv/bin/activate
-python system_manager.py --shutdown_time 20:30 --wakeup_time 07:00 --schedule_time --enable_watchdog 2>&1
+python system_manager.py 2>&1

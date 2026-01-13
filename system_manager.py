@@ -2,40 +2,26 @@ import serial
 import time as pytime
 from datetime import datetime, time, timedelta
 import os
-import argparse
 import logging
 import signal
 import sys
 
 from pvpi_manager import PvPiManager
+from pvpi_config import AppConfig
 
 # ---------------------- CLI + Main ---------------------- #
 def main():
-    parser = argparse.ArgumentParser(description="PV PI Manager CLI")
-    parser.add_argument("--log_period", type=int, default=5, help="Measurement interval (minutes)")
-    parser.add_argument("--shutdown_time", type=str, default="22:00", help="Shutdown time in HH:MM")
-    parser.add_argument("--off_delay", type=int, default=20, help="Shutdown delay (seconds)")
-    parser.add_argument("--low_bat_volt", type=float, default=12.5, help="Shutdown voltage")
-    parser.add_argument("--wakeup_time", type=str, default="08:00", help="Wakeup alarm in HH:MM")
-    parser.add_argument("--log", default="INFO", help="Logging level (DEBUG, INFO, WARNING, ERROR)")
-    parser.add_argument("--schedule_time", action='store_true', help="Use the shutdown and wakeup time")
-    parser.add_argument("--enable_watchdog", action='store_true', help="Enable the power watchdog")
-    parser.add_argument("--time_pi2mcu", action='store_true', help="Set MCU time from system time")
-    parser.add_argument("--time_mcu2pi", action='store_true', help="Set system time from MCU")
 
-    args = parser.parse_args()
+    config = AppConfig()
 
     logging.basicConfig(
-        level=getattr(logging, args.log.upper(), logging.INFO),
+        level=getattr(logging, "INFO", logging.INFO),
         format="%(asctime)s [%(levelname)s] %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S"
     )
 
-    shutdown_time_hour, shutdown_time_min = map(int, args.shutdown_time.split(":"))
-    alarm_hour, alarm_min = map(int, args.wakeup_time.split(":"))
-
-    shutdown_time = time(shutdown_time_hour, shutdown_time_min)
-    wakeup_alarm = time(alarm_hour, alarm_min)
+    shutdown_time = config.shutdown_time
+    wakeup_alarm = config.wakeup_time
 
     logging.info(f"Shutdown Time: {shutdown_time.strftime('%H:%M:%S')}")
     logging.info(f"Wakeup Time: {wakeup_alarm.strftime('%H:%M:%S')}")
@@ -53,32 +39,33 @@ def main():
         
         _ = pvpi.get_mcu_time()
         
-        if args.time_mcu2pi:
+        if config.time_mcu2pi:
             pvpi.set_system_time()
 
-        if args.time_pi2mcu:
+        if config.time_pi2mcu:
             pvpi.set_mcu_time()
 
         #Start delay
         logging.info(f"20s Startup delay")
         pytime.sleep(20)
         logging.info(f"######STARTING#######")
-        logging.info(f"Log period: {args.log_period} minutes")
-        logging.info(f"Watchdog: {'On' if args.enable_watchdog else 'Off'}")
-        logging.info(f"Time Schedule: {'On' if args.schedule_time else 'Off'}")
-        logging.info(f"######BEGIN#######")
+        logging.info(f"Log period: {config.log_period} minutes")
+        logging.info(f"Watchdog: {'On' if config.enable_watchdog else 'Off'}")
+        logging.info(f"Time Schedule: {'On' if config.schedule_time else 'Off'}")
 
-        if args.enable_watchdog:
-            pvpi.set_watchdog(2 * args.log_period)
+        if config.enable_watchdog:
+            pvpi.set_watchdog(2 * config.log_period)
 
         prev_time = datetime.now() - timedelta(hours=1)
+        
+        logging.info(f"######BEGIN#######")
         while True:
             curr_time = datetime.now()
-            if curr_time.time() >= shutdown_time and args.schedule_time:
+            if curr_time.time() >= shutdown_time and config.schedule_time:
                 logging.info(f"Shutdown Time!")
                 break
             
-            if (curr_time - prev_time).seconds >= args.log_period * 60:
+            if (curr_time - prev_time).seconds >= config.log_period * 60:
                 prev_time = datetime.now()
 
                 logging.info(f"#############")
@@ -97,7 +84,7 @@ def main():
                 logging.info(f"PV: {pv_v} V, {pv_c} A")
                 logging.info(f"PV PI Temp: {temperature}C")
 
-                if bat_v <= args.low_bat_volt:
+                if bat_v <= config.low_bat_volt:
                     logging.info(f"Shutdown Voltage!")
                     break
 
@@ -126,11 +113,11 @@ def main():
 
     finally:
        if not interrupted:
-            if args.schedule_time:
+            if config.schedule_time:
                 pvpi.set_alarm(wakeup_alarm)
 
             pvpi.stop_watchdog()
-            pvpi.power_off(args.off_delay)
+            pvpi.power_off(config.off_delay)
             logging.info("SHUTDOWN NOW")
             pytime.sleep(1)
             os.system("sudo shutdown now")

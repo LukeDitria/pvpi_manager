@@ -1,8 +1,0 @@
-{
-    "shutdown_time": "22:30",
-    "wakeup_time": "07:30",
-    "schedule_time": true,
-    "enable_watchdog": true,
-    "log_pvpi_stats": true,
-    "uart_port": "/dev/ttyAMA0"
-}

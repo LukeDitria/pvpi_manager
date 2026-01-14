@@ -25,5 +25,9 @@ def main():
     print(f"PV: {pv_v} V, {pv_c} A")
     print(f"PV PI Temp: {temperature}C")
 
+    print(f"PV PI Set MPPT State: {pvpi.set_mppt_state("ON")}")
+    print(f"PV PI Set TS State: {pvpi.set_ts_state("OFF")}")
+    print(f"PV PI Set Charge State: {pvpi.set_charge_state("ON")}")
+
 if __name__ == "__main__":
     main()

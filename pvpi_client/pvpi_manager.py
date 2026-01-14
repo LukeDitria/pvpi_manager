@@ -287,5 +287,59 @@ class PvPiManager:
         else:
             return []
 
+    def set_mppt_state(self, state: str):
+        """Set the mppt"""
+        state = state.upper()
+        if not (state == "ON" or state == "OFF"):
+            logging.warning(f"INVAILID STATE {state}")
+            return "ERROR"
+
+        cmd = f"SET_MPPT_STATE,{state}"
+        resp = self._send_command(cmd)
+        cmd_state = resp.split(",")[1] if "," in resp else "FAIL"
+
+        if cmd_state == "OK":
+            logging.info(f"PV PI MPPT set: {state}")
+            return state
+        else:
+            logging.warning(f"Failed to set PV PI MPPT! Response: {resp}")
+            return "ERROR"
+
+    def set_ts_state(self, state: str):
+        """Enable/Disable the ts"""
+        state = state.upper()
+        if not (state == "ON" or state == "OFF"):
+            logging.warning(f"INVAILID STATE {state}")
+            return "ERROR"
+
+        cmd = f"SET_TS_STATE,{state}"
+        resp = self._send_command(cmd)
+        cmd_state = resp.split(",")[1] if "," in resp else "FAIL"
+
+        if cmd_state == "OK":
+            logging.info(f"PV PI TS set: {state}")
+            return state
+        else:
+            logging.warning(f"Failed to set PV PI TS! Response: {resp}")
+            return "ERROR"
+
+    def set_charge_state(self, state: str):
+        """Enable/Disable the PV PI charging"""
+        state = state.upper()
+        if not (state == "ON" or state == "OFF"):
+            logging.warning(f"INVAILID STATE {state}")
+            return "ERROR"
+
+        cmd = f"SET_CHARGE_STATE,{state}"
+        resp = self._send_command(cmd)
+        cmd_state = resp.split(",")[1] if "," in resp else "FAIL"
+
+        if cmd_state == "OK":
+            logging.info(f"PV PI Charging set: {state}")
+            return state
+        else:
+            logging.warning(f"Failed to set PV PI Charging! Response: {resp}")
+            return "ERROR"
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.disconnect()

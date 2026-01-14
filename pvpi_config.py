@@ -14,6 +14,7 @@ CONFIG_PATH = Path("config.json")
 class AppConfig(BaseSettings):
     log_period: int = 5
     off_delay: int = 20
+    startup_delay: int = 20
     low_bat_volt: float = 12.5
 
     schedule_time: bool = False

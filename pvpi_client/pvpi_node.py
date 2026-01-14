@@ -9,7 +9,7 @@ import sys
 import zmq
 
 
-class PvPiManager:
+class PvPiNode:
     """High-level UART interface for communicating with the PV PI"""
     charge_states = [
         "Not charging",

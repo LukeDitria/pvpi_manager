@@ -67,6 +67,8 @@ To view a history of the output from the most recent logs (static output) for ei
 journalctl -u pvpi_manager.service -e
 ```
 
+# Additional Setup
+
 ## Change UART
 If you run the command
 ```commandline
@@ -94,3 +96,18 @@ This will return the current time from the PV PI which should match the system t
 If you don't have a RTC backup battery then the RTC will loose time whenever the main battery power is disconnected.<br>
 If you are relying on the the Raspberry Pi's (or other SBC) system time for time-keeping, then you should set time_pi2mcu to true in the config.json.
 
+## Run PV PI Test
+You can run the pvpi_test script (pvpi_test.py) by using the bash script:
+```commandline
+./pvpi_test.sh
+```
+pvpi_test.py is also a good example of how you can interact with the PV PI from another script via the PV PI node class in the pvpi_client directory.
+
+## Install the PV PI Client in another repo
+If you want to use the PV PI Node in another project you can pip install and link it to this repo, rather than simply copying it.
+We do not yet have the PV PI wheel on PyPi but the PV PI Client is setup so you can easily pip install it.<br>
+To do so, in your projects virtual environment run: 
+```commandline
+pip install -e /home/pi/pvpi_manager
+```
+Make sure that the full path to the pvpi_manager directory is the same as yours.

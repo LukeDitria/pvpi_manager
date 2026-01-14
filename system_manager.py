@@ -7,7 +7,7 @@ import signal
 import sys
 import utils
 
-from pvpi_manager import PvPiManager
+from pvpi_client import PvPiManager
 from pvpi_config import AppConfig
 
 def main():
@@ -76,7 +76,7 @@ def main():
                 logging.info(f"#############")
                 logging.info(f"Alive: {pvpi.get_alive()}")
 
-                pvpi.get_mcu_time()
+                logging.info(f"Current MCU time: {pvpi.get_mcu_time()}")
                 logging.info(f"System time: {datetime.now().strftime('%y-%m-%d %H:%M:%S')}")
 
                 bat_v = pvpi.get_battery_voltage()

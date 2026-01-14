@@ -43,7 +43,7 @@ def uart_zmq_service(uart_port="/dev/ttyAMA0"):
     # Set up the serial port connection
     ser = None
     try:
-        ser = serial.Serial(uart_port, BAUD_RATE, timeout=TIMEOUT_S)
+        ser = serial.Serial(uart_port, BAUD_RATE, timeout=TIMEOUT_S, write_timeout=TIMEOUT_S)
         logging.info(f"Successfully opened serial port {uart_port} at {BAUD_RATE} baud.")
 
         while True:
@@ -74,7 +74,7 @@ def uart_zmq_service(uart_port="/dev/ttyAMA0"):
                             response = ser.readline()
                             response_str = response.decode('utf-8').strip()   
 
-                            print(f"Received from UART: '{message_bytes}'")
+                            print(f"Received from UART: '{response_str}'")
                             # Send the response back to the correct client, stripping any newlines
                             # ROUTER sends a multi-part message: [client_id, delimiter, reply]
                             socket.send_multipart([client_id, b'', response_str.encode('utf-8')])

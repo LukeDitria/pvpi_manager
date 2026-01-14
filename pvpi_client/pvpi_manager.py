@@ -11,6 +11,28 @@ import zmq
 
 class PvPiManager:
     """High-level UART interface for communicating with the PV PI"""
+    charge_states = [
+        "Not charging",
+        "Trickle Charge (VBAT < VBAT_SHORT)",
+        "Pre-Charge (VBAT < VBAT_LOWV)",
+        "Fast Charge (CC mode)",
+        "Taper Charge (CV mode)",
+        "NA",
+        "Top-off Timer Charge",
+        "Charge Termination Done"
+    ]
+
+    fault_states = [
+        "NA"
+        "DRV_SUP pin voltage",
+        "Charge safety timer",
+        "Thermal shutdown",
+        "Battery over-voltage",
+        "Battery over-current",
+        "Input over-voltage",
+        "Input under-voltage",
+    ]
+
 
     def __init__(self, timeout=2):
         self.timeout = timeout
@@ -45,21 +67,6 @@ class PvPiManager:
         if self.ser and self.ser.is_open:
             self.ser.close()
             logging.info("Serial connection closed")
-
-    # ---------------------- Command Interface ---------------------- #
-    # def _send_command(self, command, expect_response=True):
-    #     """Send a command and return the STM32's response if available."""
-    #     if not self.ser or not self.ser.is_open:
-    #         raise ConnectionError("Serial port not open")
-
-    #     cmd = command.strip() + "\n"
-    #     self.ser.write(cmd.encode("utf-8"))
-
-    #     if not expect_response:
-    #         return None
-
-    #     response = self.ser.readline().decode("utf-8").strip()
-    #     return response
 
     def _send_command(self, data_request):
         try:
@@ -239,6 +246,47 @@ class PvPiManager:
         else:
             logging.warning("Failed to Set Power off!")
             return False
+
+    def get_charge_state_code(self):
+        """Get PV PI charge state code"""
+        resp = self._send_command(f"GET_CHARGE_STATE")
+        cmd_state = resp.split(",")[0] if "," in resp else "FAIL"
+
+        if cmd_state == "CHARGE_STATE":
+            charge_state_code = int(resp.split(",")[1])
+            return charge_state_code
+        else:
+            logging.warning("Failed to get charge state!")
+            return None
+
+    def get_charge_state(self):
+        """Get PV PI charge state string"""
+        charge_state_code = self.get_charge_state_code()
+        if charge_state_code is not None:
+            return self.charge_states[charge_state_code]
+        else:
+            return "NA"
+
+    def get_fault_code(self):
+        """Get PV PI fault code"""
+        resp = self._send_command(f"GET_FAULT_CODE")
+        cmd_state = resp.split(",")[0] if "," in resp else "FAIL"
+
+        if cmd_state == "FAULT_CODE":
+            fault_code = int(resp.split(",")[1])
+            return fault_code
+        else:
+            logging.warning("Failed to get fault code!")
+            return None
+
+    def get_fault_states(self):
+        """Get PV PI fault states as string"""
+        fault_code = self.get_fault_code()
+        if fault_code is not None:
+            fault_states_list = [self.fault_states[bit] for bit in range(8) if fault_code & (1 << bit)]
+            return fault_states_list
+        else:
+            return []
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.disconnect()

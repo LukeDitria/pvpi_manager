@@ -201,7 +201,6 @@ class PvPiManager:
             y, m, d, H, M, S = map(int, resp.split(",")[1:])
             full_year = 2000 + y
             dt = datetime(full_year, m, d, H, M, S)
-            logging.info(f"STM32 RTC time: {dt}")
             return dt
         except Exception as e:
             logging.warning(f"Failed to parse STM32 time response '{resp}': {e}")

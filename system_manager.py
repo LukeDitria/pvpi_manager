@@ -53,9 +53,9 @@ class SystemManager:
         pytime.sleep(self.config.startup_delay)
         logging.info(f"######STARTING#######")
         logging.info(f"Log period: {self.config.log_period} minutes")
-        logging.info(f"Watchdog: {'On' if self.config.enable_watchdog else 'Off'}")
         logging.info(f"Time Schedule: {'On' if self.config.schedule_time else 'Off'}")
 
+        logging.info(f"Watchdog: {'On' if self.config.enable_watchdog else 'Off'}")
         if self.config.enable_watchdog:
             self.pvpi.set_watchdog(2 * self.config.log_period)
 
@@ -125,10 +125,10 @@ class SystemManager:
         finally:
             if not self.interrupted:
                 if self.config.schedule_time:
-                    self.pvpi.set_alarm(self.config.wakeup_alarm)
+                    self.pvpi.set_alarm(self.config.wakeup_time)
 
                 self.pvpi.stop_watchdog()
-                self.pvpi.power_off(config.off_delay)
+                self.pvpi.power_off(self.config.off_delay)
                 logging.info("SHUTDOWN NOW")
                 pytime.sleep(1)
                 os.system("sudo shutdown now")

@@ -1,21 +1,12 @@
-import serial
-import time as pytime
-from datetime import datetime, time
-import os
-import argparse
-import logging
-import signal
-import sys
-
-from pvpi_manager import PvPiManager
+from pvpi_client import PvPiManager
 
 # ---------------------- CLI + Main ---------------------- #
 def main():
     pvpi = PvPiManager()
-    logging.info("Checking connection...")
-    logging.info(f"Alive: {pvpi.get_alive()}")
+    print("Checking connection...")
+    print(f"Alive: {pvpi.get_alive()}")
     pvpi.set_mcu_time()
-    print(pvpi.get_mcu_time())
+    print(f"Current MCU time: {pvpi.get_mcu_time()}")
 
 if __name__ == "__main__":
     main()

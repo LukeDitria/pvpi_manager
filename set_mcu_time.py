@@ -1,8 +1,8 @@
-from pvpi_client import PvPiManager
+from pvpi_client import PvPiNode
 
 # ---------------------- CLI + Main ---------------------- #
 def main():
-    pvpi = PvPiManager()
+    pvpi = PvPiNode()
     print("Checking connection...")
     print(f"Alive: {pvpi.get_alive()}")
     pvpi.set_mcu_time()

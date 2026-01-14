@@ -7,7 +7,7 @@ import signal
 import sys
 import utils
 
-from pvpi_client import PvPiManager
+from pvpi_client import PvPiNode
 from pvpi_config import AppConfig
 
 def main():
@@ -34,7 +34,7 @@ def main():
         logging.info(f"Wait for UART server startup")
         pytime.sleep(5)
 
-        pvpi = PvPiManager()
+        pvpi = PvPiNode()
         logging.info("Checking connection...")
         logging.info(f"Alive: {pvpi.get_alive()}")
         

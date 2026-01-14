@@ -42,13 +42,6 @@ class PvPiNode:
     # ---------------------- Connection Management ---------------------- #
     def connect(self):
         """Open the connection to the UART Server."""
-        # try:
-        #     self.ser = serial.Serial(self.port, self.baudrate, timeout=self.timeout)
-        #     pytime.sleep(2)  # Give MCU time to reset after opening
-        #     logging.info(f"Connected to STM32 on {self.port} @ {self.baudrate} baud")
-        # except serial.SerialException as e:
-        #     raise ConnectionError(f"Failed to open serial port {self.port}: {e}")
-
         ZMQ_PORT = "tcp://127.0.0.1:5555"
 
         try:
@@ -86,7 +79,7 @@ class PvPiNode:
 
     # ---------------------- Helper Commands ---------------------- #
     def get_alive(self):
-        """Check if STM32 is responsive."""
+        """Check if PV PI is responsive."""
         resp = self._send_command("GET_ALIVE")
         return resp == "ALIVE"
 
@@ -141,7 +134,7 @@ class PvPiNode:
         cmd_state = resp.split(",")[1] if "," in resp else "FAIL"
 
         if cmd_state == "OK":
-            logging.info(f"STM32 Watchdog set with period: {watchdog_period}")
+            logging.info(f"PV PI Watchdog set with period: {watchdog_period}")
             return True
         else:
             logging.warning(f"Failed to set Watchdog! Response: {resp}")
@@ -154,7 +147,7 @@ class PvPiNode:
             cmd_state = resp.split(",")[1] if "," in resp else "FAIL"
 
             if cmd_state == "OK":
-                logging.info("STM32 Watchdog OFF")
+                logging.info("PV PI Watchdog OFF")
                 return True
             else:
                 logging.warning("Failed to Stop Watchdog!")
@@ -176,7 +169,7 @@ class PvPiNode:
             temperature = int(resp.split(",")[1])
             return temperature
         except Exception as e:
-            logging.warning(f"Failed to PV PI Temperature '{resp}': {e}")
+            logging.warning(f"Failed to get PV PI Temperature '{resp}': {e}")
             return None
 
     # ---------------------- Time Sync Commands ---------------------- #
@@ -203,7 +196,7 @@ class PvPiNode:
             dt = datetime(full_year, m, d, H, M, S)
             return dt
         except Exception as e:
-            logging.warning(f"Failed to parse STM32 time response '{resp}': {e}")
+            logging.warning(f"Failed to parse PV PI time response '{resp}': {e}")
             return None
 
     def set_system_time(self):
@@ -228,7 +221,7 @@ class PvPiNode:
         resp = self._send_command(cmd)
 
         if resp == "OK":
-            logging.info(f"STM32 Alarm Set at: {alarm_time}")
+            logging.info(f"PV PI Alarm Set at: {alarm_time}")
             return True
         else:
             logging.warning("Failed to set alarm!")

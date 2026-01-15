@@ -1,5 +1,6 @@
 from pvpi_client import PvPiNode
 from datetime import datetime
+import time
 
 def main():
     pvpi = PvPiNode()
@@ -16,6 +17,9 @@ def main():
     print(f"PV PI Set MPPT State: {pvpi.set_mppt_state("ON")}")
     print(f"PV PI Set TS State: {pvpi.set_ts_state("OFF")}")
     print(f"PV PI Set Charge State: {pvpi.set_charge_state("ON")}")
+
+    print(f"\n####PV PI Set MAX Charge Current TEST####")
+    print(f"PV PI Set MAX Charge Current: {pvpi.set_max_charge_current(10)}")
 
     print(f"\n####PV PI Charge and Fault Status TEST####")
     print(f"PV PI Charge State code: {pvpi.get_charge_state_code()}")

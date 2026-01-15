@@ -127,35 +127,6 @@ class PvPiNode:
             logging.warning("Failed to get PV Current!")
             return None
 
-    def set_watchdog(self, watchdog_period):
-        """Set the Power watchdog."""
-        cmd = f"WATCHDOG_ON,{watchdog_period}"
-        resp = self._send_command(cmd)
-        cmd_state = resp.split(",")[1] if "," in resp else "FAIL"
-
-        if cmd_state == "OK":
-            logging.info(f"PV PI Watchdog set with period: {watchdog_period}")
-            return True
-        else:
-            logging.warning(f"Failed to set Watchdog! Response: {resp}")
-            return False
-
-    def stop_watchdog(self):
-        """Stop the Power watchdog."""
-        try:
-            resp = self._send_command("WATCHDOG_OFF")
-            cmd_state = resp.split(",")[1] if "," in resp else "FAIL"
-
-            if cmd_state == "OK":
-                logging.info("PV PI Watchdog OFF")
-                return True
-            else:
-                logging.warning("Failed to Stop Watchdog!")
-                return False
-        except Exception as e:
-            logging.error(f"Error stopping watchdog: {e}")
-            return False
-
     def get_board_temp(self):
         """Get the PVPI Board temperature"""
         resp = self._send_command("GET_TEMP")
@@ -218,15 +189,17 @@ class PvPiNode:
     def set_alarm(self, alarm_time: time):
         """Set STM32 alarm using a datetime time object."""
         cmd = f"SET_ALARM,{alarm_time.hour},{alarm_time.minute},{alarm_time.second}"
-        resp = self._send_command(cmd)
+        resp = self._send_command(cmd).replace(" ", "")
+        cmd_state = resp.split(",")[1] if "," in resp else "FAIL"
 
-        if resp == "OK":
+        if cmd_state == "OK":
             logging.info(f"PV PI Alarm Set at: {alarm_time}")
             return True
         else:
             logging.warning("Failed to set alarm!")
             return False
 
+    # ---------------------- Power Commands ---------------------- #
     def power_off(self, delay_s=30):
         """Schedule power-off after delay (seconds)."""
         resp = self._send_command(f"POWER_OFF,{delay_s}")
@@ -239,6 +212,74 @@ class PvPiNode:
             logging.warning("Failed to Set Power off!")
             return False
 
+    def set_watchdog(self, watchdog_period):
+        """Set the Power watchdog."""
+        cmd = f"WATCHDOG_ON,{watchdog_period}"
+        resp = self._send_command(cmd)
+        cmd_state = resp.split(",")[1] if "," in resp else "FAIL"
+
+        if cmd_state == "OK":
+            logging.info(f"PV PI Watchdog set with period: {watchdog_period}")
+            return True
+        else:
+            logging.warning(f"Failed to set Watchdog! Response: {resp}")
+            return False
+
+    def stop_watchdog(self):
+        """Stop the Power watchdog."""
+        try:
+            resp = self._send_command("WATCHDOG_OFF")
+            cmd_state = resp.split(",")[1] if "," in resp else "FAIL"
+
+            if cmd_state == "OK":
+                logging.info("PV PI Watchdog OFF")
+                return True
+            else:
+                logging.warning("Failed to Stop Watchdog!")
+                return False
+        except Exception as e:
+            logging.error(f"Error stopping watchdog: {e}")
+            return False
+
+    def set_wakeup_voltage(self, voltage):
+        """Set the voltage at which the PV PI will wake the system."""
+        if voltage < 11.5 or voltage > 14.4:
+            logging.warning(f"Voltage Value {voltage} is invalid! Must be >11.5 and <14.4")
+            return False
+
+        # The PV PI takes a milivoltage
+        milivoltage = voltage * 1000
+        cmd = f"SET_WAKEUP_MILIVOLT,{milivoltage}"
+        resp = self._send_command(cmd)
+        cmd_state = resp.split(",")[1] if "," in resp else "FAIL"
+
+        if cmd_state == "OK":
+            logging.info(f"PV PI Wakeup Voltage set to: {voltage}")
+            return True
+        else:
+            logging.warning(f"Failed to set Wakeup Voltage {voltage}, Response: {resp}")
+            return False
+
+    def set_max_charge_current(self, current):
+        """Set the maxumin battery charge current for the the PV PI."""
+        if current < 0.4 or current > 10:
+            logging.warning(f"Current Value {current} is invalid! Must be >0.4 and <10")
+            return False
+
+        # The PV PI takes a miliamps
+        miliamps = current * 1000
+            
+        cmd = f"SET_CHARGE_MILIAMPS,{miliamps}"
+        resp = self._send_command(cmd)
+        cmd_state = resp.split(",")[1] if "," in resp else "FAIL"
+
+        if cmd_state == "OK":
+            logging.info(f"PV PI Battery Charge Current set to: {current}")
+            return True
+        else:
+            logging.warning(f"Failed to set Battery Charge Current {current}, Response: {resp}")
+            return False
+    # ---------------------- Fault and Status Commands ---------------------- #
     def get_charge_state_code(self):
         """Get PV PI charge state code"""
         resp = self._send_command(f"GET_CHARGE_STATE")
@@ -280,6 +321,7 @@ class PvPiNode:
         else:
             return []
 
+    # ---------------------- Set Behaviour Commands ---------------------- #
     def set_mppt_state(self, state: str):
         """Set the mppt"""
         state = state.upper()

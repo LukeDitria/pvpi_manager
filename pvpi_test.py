@@ -21,6 +21,9 @@ def main():
     print(f"\n####PV PI Set MAX Charge Current TEST####")
     print(f"PV PI Set MAX Charge Current: {pvpi.set_max_charge_current(10)}")
 
+    print(f"\n####PV PI Set Wakeup Voltage TEST####")
+    print(f"PV PI Set Wakeup Voltage: {pvpi.set_wakeup_voltage(13)}")
+
     print(f"\n####PV PI Charge and Fault Status TEST####")
     print(f"PV PI Charge State code: {pvpi.get_charge_state_code()}")
     print(f"PV PI Charge State: {pvpi.get_charge_state()}")

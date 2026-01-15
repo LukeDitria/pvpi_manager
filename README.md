@@ -1,20 +1,20 @@
 # PVPI_Manager
-Automatic device manager for the PVPI <br>
-TODO:<br>
-Create manual UART communication examples<br>
+Automatic device manager for the PVPI   
+TODO:  
+Create manual UART communication examples  
 
 
 # Setup and install
 To setup an install the PV PI on your Raspberry Pi or other SBC login to your device and using the terminal run the following commands!
 
 ## Enable UART
-Before setting up the PV PI you will need to enable the UART port on your device.<br>
-For the Raspberry Pi and other SBC using the 40pin header the PV PI will use the UART port on pins GPIO 14/15.<br>
-For the Raspberry Pi you can do this via raspi-config.<br>
+Before setting up the PV PI you will need to enable the UART port on your device.  
+For the Raspberry Pi and other SBC using the 40pin header the PV PI will use the UART port on pins GPIO 14/15.  
+For the Raspberry Pi you can do this via raspi-config.  
 By default the PV PI manager tries to use /dev/ttyAMA0, you can change this AFTER setup by modifying the generated config.json file.
 
 ## git clone this repo
-Navigate to your home diretory and git clone this repo
+Navigate to your home directory and git clone this repo
 ```commandline
 cd --
 git clone https://github.com/LukeDitria/pvpi_manager.git
@@ -32,7 +32,7 @@ chmod +x setup.sh
 ```
 
 # System services
-The PV PI manager creates 2 system services that will startup and run automatically upon every boot up!<br>
+The PV PI manager creates 2 system services that will startup and run automatically upon every boot up!  
 
 #### uart_server.service
 This service is what is used to communicate to the PV PI.
@@ -43,8 +43,8 @@ This way multiple different processes can send and receive commands to/from the 
 This is the main PV PI manager service. It loads the values in the config.json and performs system management as per the specified configurations. 
 
 ## Controlling System services
-Both of these system services are set to start running straight away during the setup step.<br>
-You can control either service with the following commands: "status", "stop", "start" and "restart".<br>
+Both of these system services are set to start running straight away during the setup step.  
+You can control either service with the following commands: "status", "stop", "start" and "restart".  
 For example:
 ```commandline
 sudo systemctl status pvpi_manager.service
@@ -74,11 +74,11 @@ If you run the command
 ```commandline
 journalctl -u uart_server.service -e
 ```
-And see that the UART server cannot find the PV PI, then either UART has not been enabled or the wrong location is defined in the config.json.<br>
-To update the port location, change the "uart_port" parameter of the config.json file to your UART port location.<br>
-For the Raspberry Pi this is usually /dev/ttyAMA0 <br> 
-For other SBCs you'll need to consult the device documentation.<br>
-<br>
+And see that the UART server cannot find the PV PI, then either UART has not been enabled or the wrong location is defined in the config.json.  
+To update the port location, change the "uart_port" parameter of the config.json file to your UART port location.  
+For the Raspberry Pi this is usually /dev/ttyAMA0    
+For other SBCs you'll need to consult the device documentation.  
+  
 Once you have changed the "uart_port" parameter, restart the uart server.
 
 ```commandline
@@ -86,14 +86,14 @@ sudo systemctl restart uart_server.service
 ```
 
 ## Manually Set the PV PI STM32 RTC time to the SBC System time
-To sync the time on the PV PI RTC we can send a "set time" command using the PV PI Manager.<br>
-You'll only need to do this once if you have a RTC backup battery connected to the PV PI.<br>
+To sync the time on the PV PI RTC we can send a "set time" command using the PV PI Manager.  
+You'll only need to do this once if you have a RTC backup battery connected to the PV PI.  
 Make sure that the uart_server.service is running first!
 ```commandline
 ./set_pvpi_time.sh
 ```
-This will return the current time from the PV PI which should match the system time (give or take a second or so).<br>
-If you don't have a RTC backup battery then the RTC will loose time whenever the main battery power is disconnected.<br>
+This will return the current time from the PV PI which should match the system time (give or take a second or so).  
+If you don't have a RTC backup battery then the RTC will loose time whenever the main battery power is disconnected.  
 If you are relying on the the Raspberry Pi's (or other SBC) system time for time-keeping, then you should set time_pi2mcu to true in the config.json.
 
 ## Run PV PI Test
@@ -105,7 +105,7 @@ pvpi_test.py is also a good example of how you can interact with the PV PI from 
 
 ## Install the PV PI Client in another repo
 If you want to use the PV PI Node in another project you can pip install and link it to this repo, rather than simply copying it.
-We do not yet have the PV PI wheel on PyPi but the PV PI Client is setup so you can easily pip install it.<br>
+We do not yet have the PV PI wheel on PyPi but the PV PI Client is setup so you can easily pip install it.  
 To do so, in your projects virtual environment run: 
 ```commandline
 pip install -e /home/pi/pvpi_manager

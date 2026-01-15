@@ -1,0 +1,41 @@
+[project]
+name = "pvpi"
+version = "0.0.1"
+description = ""
+readme = "README.md"
+requires-python = ">=3.13"
+license = {file = "LICENSE"}
+authors = [
+  {name = "Luke Ditria"},
+  {name = "Matthew Timms", email = "pvpi@timms.dev" },
+]
+dependencies = [
+    "pydantic>=2.12.5",
+    "pydantic-settings>=2.12.0",
+    "pyserial>=3.5",
+    "zmq>=0.0.0",
+]
+[dependency-groups]
+dev = [
+]
+
+[tool.uv]
+package = true
+#environments = [
+#    "sys_platform == 'linux'",
+#]
+
+#[project.scripts]
+#pvpi = "pvpi.cli:cli"  # TOOD
+
+[tool.ruff]
+line-length = 120
+[tool.ruff.lint]
+extend-select = [
+    "B",
+    "I",
+    "UP",
+    "TID",
+    "A",
+    "SIM"
+]

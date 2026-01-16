@@ -11,7 +11,7 @@ from pydantic_settings import (
 
 CONFIG_PATH = Path("config.json")
 
-class AppConfig(BaseSettings):
+class PvPiConfig(BaseSettings):
     log_period: int = 5
     off_delay: int = 20
     startup_delay: int = 20
@@ -36,7 +36,6 @@ class AppConfig(BaseSettings):
         env_prefix="PVPI_",
         json_file=CONFIG_PATH,
         extra="ignore"
-
     )
 
     def write_default_config(self):

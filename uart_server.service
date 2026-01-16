@@ -5,10 +5,16 @@ After=multi-user.target
 [Service]
 Type=simple
 User=pi
+# Todo
 User=TARGET_USER
-WorkingDirectory=TARGET_DIR
-ExecStart=/bin/bash TARGET_DIR/uart_server.sh
 
+WorkingDirectory=/srv/pvpi
+Environment=HOME=/var/lib/pvpi
+Environment=UV_CACHE_DIR=/var/cache/pvpi/uv
+Environment=UV_PYTHON_INSTALL_DIR=/var/lib/pvpi/uv-python
+
+ExecStartPre=/usr/local/bin/uv sync --frozen --no-dev
+ExecStart=/srv/pvpi/.venv/bin/python -m pvpi uart_zmq_service
 Restart=always
 RestartSec=10
 

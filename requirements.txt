@@ -1,4 +1,0 @@
-pyserial
-zmq
-pydantic
-pydantic-settings

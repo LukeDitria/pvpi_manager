@@ -1,18 +1,15 @@
-import serial
 import time as pytime
-from datetime import datetime, time, timedelta
+from datetime import datetime, timedelta
 import os
 import logging
-import signal
-import sys
-import utils
+from pvpi.csv_logger import DailyCSVLogger
+from pvpi.client import PvPiNode
+from pvpi.config import PvPiConfig
 
-from pvpi_client import PvPiNode
-from pvpi_config import AppConfig
 
 class SystemManager:
     def __init__(self):
-        self.config = AppConfig()
+        self.config = PvPiConfig()
         self.config.write_default_config()
 
         logging.basicConfig(
@@ -44,8 +41,8 @@ class SystemManager:
 
         if self.config.log_pvpi_stats:
             logging.info(f"Logging PV PI statistics")
-            self.stats_data_logger = utils.DailyCSVLogger(
-                self.config.data_log_path, 
+            self.stats_data_logger = DailyCSVLogger(
+                self.config.data_log_path,
                 self.config.log_last_days)
 
         #Start delay
@@ -69,7 +66,7 @@ class SystemManager:
                 if curr_time.time() >= self.config.shutdown_time and self.config.schedule_time:
                     logging.info(f"Shutdown Time!")
                     break
-                
+
                 if (curr_time - prev_time).seconds >= self.config.log_period * 60:
                     prev_time = datetime.now()
 
@@ -135,11 +132,8 @@ class SystemManager:
                 while True:
                     pytime.sleep(100)
 
-def main():
+
+if __name__ == "__main__":
     sys_manager = SystemManager()
     sys_manager.setup()
     sys_manager.run_manager()
-
-
-if __name__ == "__main__":
-    main()

@@ -1,17 +1,15 @@
 import zmq
 import serial
-import time
 import sys
-import json
 import logging
-from pvpi_config import AppConfig
+from pvpi.config import PvPiConfig
 
 # ZeroMQ configuration
 ZMQ_PORT = "tcp://127.0.0.1:5555"
 ZMQ_TIMEOUT_MS = 1000  # Timeout for ZeroMQ receive operation
 
 # UART configuration
-BAUD_RATE = 115200
+BAUD_RATE = 115_200
 TIMEOUT_S = 5  # Timeout for serial port read operation
 
 logging.basicConfig(
@@ -38,7 +36,7 @@ def uart_zmq_service(uart_port="/dev/ttyAMA0"):
     socket = context.socket(zmq.ROUTER)
     socket.bind(ZMQ_PORT)
     logging.info(f"ZeroMQ service listening on {ZMQ_PORT}")
-    
+
 
     # Set up the serial port connection
     ser = None
@@ -55,7 +53,7 @@ def uart_zmq_service(uart_port="/dev/ttyAMA0"):
                     # ROUTER receives a multi-part message: [client_id, delimiter, message]
                     message_parts = socket.recv_multipart()
                     client_id = message_parts[0]
-                    
+
                     # Concatenate the rest of the message parts into a single message body.
                     request_type = message_parts[1].decode('utf-8')
 
@@ -72,7 +70,7 @@ def uart_zmq_service(uart_port="/dev/ttyAMA0"):
 
                             # Wait for a response from the UART device
                             response = ser.readline()
-                            response_str = response.decode('utf-8').strip()   
+                            response_str = response.decode('utf-8').strip()
 
                             print(f"Received from UART: '{response_str}'")
                             # Send the response back to the correct client, stripping any newlines
@@ -119,5 +117,5 @@ def uart_zmq_service(uart_port="/dev/ttyAMA0"):
             logging.info("ZeroMQ context terminated.")
 
 if __name__ == '__main__':
-    config = AppConfig()
+    config = PvPiConfig()
     uart_zmq_service(uart_port=config.uart_port)

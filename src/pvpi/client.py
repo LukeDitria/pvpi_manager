@@ -1,11 +1,6 @@
-import serial
 import time as pytime
 from datetime import datetime, time
-import os
-import argparse
 import logging
-import signal
-import sys
 import zmq
 
 
@@ -66,11 +61,11 @@ class PvPiNode:
             # Send the request
             # self.socket.send_string(data_request)
             self.socket.send_multipart([b"send_command", data_request.encode('utf-8')])
-            
+
             # Wait for the reply from the server
             reply_parts = self.socket.recv_multipart()
             reply = reply_parts[1].decode('utf-8')
-                        
+
             return reply
 
         except Exception as e:
@@ -268,7 +263,7 @@ class PvPiNode:
 
         # The PV PI takes a miliamps
         miliamps = current * 1000
-            
+
         cmd = f"SET_CHARGE_MILIAMPS,{miliamps}"
         resp = self._send_command(cmd)
         cmd_state = resp.split(",")[1] if "," in resp else "FAIL"

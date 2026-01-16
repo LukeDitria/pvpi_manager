@@ -1,8 +1,22 @@
 from pvpi_client import PvPiNode
 from datetime import datetime
-import time
 
-def main():
+import click
+
+@click.group()
+def cli():
+    pass
+
+@cli.command(short_help="") # TODO
+def set_mcu_time():
+    pvpi = PvPiNode()
+    print("Checking connection...")
+    print(f"Alive: {pvpi.get_alive()}")
+    pvpi.set_mcu_time()
+    print(f"Current MCU time: {pvpi.get_mcu_time()}")
+
+@cli.command(name="test")
+def pvpi_connection_test():
     pvpi = PvPiNode()
     print("Running PV PI function test!")
     print("Checking connection...")
@@ -43,5 +57,21 @@ def main():
     print(f"PV: {pv_v} V, {pv_c} A")
     print(f"PV PI Temp: {temperature}C")
 
+@cli.command()
+def system_manager():
+    from pvpi.services.system_manager import SystemManager
+
+    sys_manager = SystemManager()
+    sys_manager.setup()
+    sys_manager.run_manager()
+
+@cli.command()
+def uart_service():
+    from pvpi.services.uart_zmq_service import uart_zmq_service
+    from pvpi.config import PvPiConfig
+
+    config = PvPiConfig()
+    uart_zmq_service(uart_port=config.uart_port)
+
 if __name__ == "__main__":
-    main()
+    cli()

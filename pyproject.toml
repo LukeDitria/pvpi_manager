@@ -10,6 +10,7 @@ authors = [
   {name = "Matthew Timms", email = "pvpi@timms.dev" },
 ]
 dependencies = [
+    "click>=8.3.1",
     "pydantic>=2.12.5",
     "pydantic-settings>=2.12.0",
     "pyserial>=3.5",

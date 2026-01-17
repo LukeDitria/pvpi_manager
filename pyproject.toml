@@ -26,8 +26,8 @@ package = true
 #    "sys_platform == 'linux'",
 #]
 
-#[project.scripts]
-#pvpi = "pvpi.cli:cli"  # TOOD
+[project.scripts]
+pvpi = "pvpi.cli:cli"
 
 [tool.ruff]
 line-length = 120

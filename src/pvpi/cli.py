@@ -1,19 +1,30 @@
-from pvpi_client import PvPiNode
 from datetime import datetime
 
 import click
+
+from pvpi.client import PvPiNode
+
 
 @click.group()
 def cli():
     pass
 
-@cli.command(short_help="") # TODO
+
+@cli.command()
+@click.option("--user", is_flag=True, help="Install systemd services as current user")
+def install(user: bool = False):
+    from pvpi.systemd.install import install_systemd
+    install_systemd(user=user)
+
+
+@cli.command(short_help="")  # TODO
 def set_mcu_time():
     pvpi = PvPiNode()
     print("Checking connection...")
     print(f"Alive: {pvpi.get_alive()}")
     pvpi.set_mcu_time()
     print(f"Current MCU time: {pvpi.get_mcu_time()}")
+
 
 @cli.command(name="test")
 def pvpi_connection_test():
@@ -57,21 +68,24 @@ def pvpi_connection_test():
     print(f"PV: {pv_v} V, {pv_c} A")
     print(f"PV PI Temp: {temperature}C")
 
+
 @cli.command()
-def system_manager():
+def manager():
     from pvpi.services.system_manager import SystemManager
 
     sys_manager = SystemManager()
     sys_manager.setup()
     sys_manager.run_manager()
 
+
 @cli.command()
-def uart_service():
+def uart():
     from pvpi.services.uart_zmq_service import uart_zmq_service
     from pvpi.config import PvPiConfig
 
     config = PvPiConfig()
     uart_zmq_service(uart_port=config.uart_port)
+
 
 if __name__ == "__main__":
     cli()

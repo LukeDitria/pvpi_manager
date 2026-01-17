@@ -5,15 +5,13 @@ Requires=uart_server.service
 
 [Service]
 Type=simple
-User=TARGET_USER
-
 WorkingDirectory=/srv/pvpi
 Environment=HOME=/var/lib/pvpi
 Environment=UV_CACHE_DIR=/var/cache/pvpi/uv
 Environment=UV_PYTHON_INSTALL_DIR=/var/lib/pvpi/uv-python
 
 ExecStartPre=/usr/local/bin/uv sync --frozen --no-dev
-ExecStart=/srv/pvpi/.venv/bin/python -m pvpi system_manager
+ExecStart=/srv/pvpi/.venv/bin/python -m pvpi manager
 Restart=always
 RestartSec=10
 

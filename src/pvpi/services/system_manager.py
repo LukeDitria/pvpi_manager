@@ -1,139 +1,106 @@
-import time as pytime
-from datetime import datetime, timedelta
-import os
 import logging
-from pvpi.csv_logger import DailyCSVLogger
-from pvpi.client import PvPiNode
+import os
+import sys
+import time
+from datetime import datetime, timedelta
+
+from pvpi.client import PvPiClient
 from pvpi.config import PvPiConfig
+from pvpi.csv_logger import DailyCSVLogger
+from pvpi.transports import ZmqSerialProxyInterface
+from pvpi.utils import set_system_time
+
+_logger = logging.getLogger(__name__)
 
 
-class SystemManager:
-    def __init__(self):
-        self.config = PvPiConfig()
-        self.config.write_default_config()
+def main(config: PvPiConfig):
+    serial_interface = ZmqSerialProxyInterface()
+    # TODO error handling
 
-        logging.basicConfig(
-            level=getattr(logging, "INFO", logging.INFO),
-            format="%(asctime)s [%(levelname)s] %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S"
-        )
+    client = PvPiClient(interface=serial_interface)
 
-        if self.config.schedule_time:
-            logging.info(f"Shutdown Time: {self.config.shutdown_time.strftime('%H:%M:%S')}")
-            logging.info(f"Wakeup Time: {self.config.wakeup_time.strftime('%H:%M:%S')}")
+    # Check Pv Pi status
+    is_alive = client.get_alive()
+    _logger.info("Alive: %s", is_alive)
 
-        self.interrupted = False
+    # Set one clock to match the other
+    if config.time_mcu2pi:
+        mcu_time: datetime = client.get_mcu_time()
+        set_system_time(mcu_time)
+    if config.time_pi2mcu:
+        client.set_mcu_time()
 
-        logging.info(f"Wait for UART server startup")
-        pytime.sleep(5)
+    # Setup CSV logger
+    stats_data_logger: DailyCSVLogger | None = None
+    if config.log_pvpi_stats:
+        _logger.info("Logging PV PI statistics")
+        stats_data_logger = DailyCSVLogger(config.data_log_path, config.keep_for_days)  # TODO
 
-        self.pvpi = PvPiNode()
+    # Delay start
+    if config.startup_delay:
+        _logger.info("%is Startup delay", config.startup_delay)
+        time.sleep(config.startup_delay)
 
-    def setup(self):
-        logging.info("Checking connection...")
-        logging.info(f"Alive: {self.pvpi.get_alive()}")
+    _logger.info("Log period: %i minutes", config.log_period)
+    _logger.info(f"Time Schedule: {'On' if config.schedule_time else 'Off'}")
 
-        if self.config.time_mcu2pi:
-            self.pvpi.set_system_time()
+    # Setup power watchdog
+    _logger.info(f"Watchdog: {'On' if config.enable_watchdog else 'Off'}")
+    if config.enable_watchdog:
+        client.set_watchdog(2 * config.log_period)
 
-        if self.config.time_pi2mcu:
-            self.pvpi.set_mcu_time()
+    # Pv Pi Logging loop
+    try:
+        prev_time = datetime.now() - timedelta(hours=1)  # TODO set based on log-period
+        while True:
+            curr_time = datetime.now()
+            if curr_time.time() >= config.shutdown_time and config.schedule_time:
+                _logger.info("Shutdown Time!")
+                break
 
-        if self.config.log_pvpi_stats:
-            logging.info(f"Logging PV PI statistics")
-            self.stats_data_logger = DailyCSVLogger(
-                self.config.data_log_path,
-                self.config.log_last_days)
+            log_period_sec = config.log_period * 60
+            sec_since_last_log = (curr_time - prev_time).seconds
+            if sec_since_last_log >= log_period_sec:
+                prev_time = datetime.now()
 
-        #Start delay
-        logging.info(f"{self.config.startup_delay}s Startup delay")
-        pytime.sleep(self.config.startup_delay)
-        logging.info(f"######STARTING#######")
-        logging.info(f"Log period: {self.config.log_period} minutes")
-        logging.info(f"Time Schedule: {'On' if self.config.schedule_time else 'Off'}")
+                is_alive = client.get_alive()
+                mcu_time = client.get_mcu_time()
+                _logger.info("Alive: %s", is_alive)
+                _logger.info("Current MCU time: %s", mcu_time)
+                _logger.info("System time: %s", datetime.now().strftime("%y-%m-%d %H:%M:%S"))
 
-        logging.info(f"Watchdog: {'On' if self.config.enable_watchdog else 'Off'}")
-        if self.config.enable_watchdog:
-            self.pvpi.set_watchdog(2 * self.config.log_period)
+                bat_v = client.get_battery_voltage()
+                bat_c = client.get_battery_current()
+                pv_v = client.get_pv_voltage()
+                pv_c = client.get_pv_current()
+                temperature = client.get_board_temp()
+                _logger.info("Battery: %s V, %s A", bat_v, bat_c)
+                _logger.info("PV: %s V, %s A", pv_v, pv_c)
+                _logger.info("PV PI Temp: %sC", temperature)
 
+                if stats_data_logger:
+                    stats_data_logger.log_stats(bat_v, bat_c, pv_v, pv_c, temperature)
 
-    def run_manager(self):
-        try:
-            logging.info(f"######BEGIN#######")
-            prev_time = datetime.now() - timedelta(hours=1)
-            while True:
-                curr_time = datetime.now()
-                if curr_time.time() >= self.config.shutdown_time and self.config.schedule_time:
-                    logging.info(f"Shutdown Time!")
+                if bat_v <= config.low_bat_volt:
+                    _logger.info("Shutdown Voltage!")
                     break
 
-                if (curr_time - prev_time).seconds >= self.config.log_period * 60:
-                    prev_time = datetime.now()
+            time.sleep(30)
+    except Exception as err:
+        _logger.warning("Exception raised %s", err)
+        client.stop_watchdog()
+        serial_interface.close()
+        sys.exit(-1)
+    else:
+        if config.schedule_time:
+            client.set_alarm(config.wakeup_time)
 
-                    logging.info(f"#############")
-                    logging.info(f"Alive: {self.pvpi.get_alive()}")
+        client.stop_watchdog()
+        client.power_off(config.off_delay)  # TODO what?
 
-                    logging.info(f"Current MCU time: {self.pvpi.get_mcu_time()}")
-                    logging.info(f"System time: {datetime.now().strftime('%y-%m-%d %H:%M:%S')}")
-
-                    bat_v = self.pvpi.get_battery_voltage()
-                    bat_c = self.pvpi.get_battery_current()
-                    pv_v = self.pvpi.get_pv_voltage()
-                    pv_c = self.pvpi.get_pv_current()
-                    temperature = self.pvpi.get_board_temp()
-
-                    logging.info(f"Battery: {bat_v} V, {bat_c} A")
-                    logging.info(f"PV: {pv_v} V, {pv_c} A")
-                    logging.info(f"PV PI Temp: {temperature}C")
-
-                    if self.config.log_pvpi_stats:
-                        self.stats_data_logger.log_stats(
-                            bat_v, bat_c,
-                            pv_v, pv_c,
-                            temperature
-                        )
-
-                    if bat_v <= self.config.low_bat_volt:
-                        logging.info(f"Shutdown Voltage!")
-                        break
-
-                pytime.sleep(30)
-
-        except KeyboardInterrupt:
-            """Handle Ctrl+C or SIGTERM cleanly."""
-            logging.warning("Interrupt received — cleaning up...")
-            if self.pvpi:
-                self.pvpi.stop_watchdog()
-                self.pvpi.disconnect()
-                self.interrupted = True
-            logging.info("Exiting safely.")
-            exit
-
-        except Exception as e:
-            logging.error(f"Unexpected error: {e}")
-            """Handle Ctrl+C or SIGTERM cleanly."""
-            logging.warning("Interrupt received — cleaning up...")
-            if self.pvpi:
-                self.pvpi.stop_watchdog()
-                self.pvpi.disconnect()
-                self.interrupted = True
-            logging.info("Exiting safely.")
-            exit
-        finally:
-            if not self.interrupted:
-                if self.config.schedule_time:
-                    self.pvpi.set_alarm(self.config.wakeup_time)
-
-                self.pvpi.stop_watchdog()
-                self.pvpi.power_off(self.config.off_delay)
-                logging.info("SHUTDOWN NOW")
-                pytime.sleep(1)
-                os.system("sudo shutdown now")
-                while True:
-                    pytime.sleep(100)
-
-
-if __name__ == "__main__":
-    sys_manager = SystemManager()
-    sys_manager.setup()
-    sys_manager.run_manager()
+        _logger.info("shutting down...")
+        time.sleep(1)
+        os.system("sudo shutdown now")  # TODO
+        while True:
+            _logger.info("sleeping, waiting for shutdown...")
+            time.sleep(100)

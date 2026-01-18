@@ -1,90 +1,108 @@
+import asyncio
+import logging
 from datetime import datetime
 
 import click
+import serial
 
-from pvpi.client import PvPiNode
+from pvpi.client import PvPiClient
+from pvpi.services.zmq_serial_proxy import ZmqSerialProxy
+from pvpi.transports import SerialInterface
+from pvpi.utils import init_logging
+
+logger = logging.getLogger("pvpi")
 
 
 @click.group()
-def cli():
-    pass
+@click.option("--verbose", is_flag=True, help="Enable debug logging.")
+def cli(verbose: bool = False):
+    level = logging.DEBUG if verbose else logging.INFO
+    init_logging(logger=logger, level=level)
 
 
 @cli.command()
 @click.option("--user", is_flag=True, help="Install systemd services as current user")
-def install(user: bool = False):
+@click.option("--config", type=click.Path(exists=True, file_okay=True, dir_okay=False))
+def install(user: bool = False, config: str = None):
     from pvpi.systemd.install import install_systemd
+
+    # TODO grab config
+
+
     install_systemd(user=user)
 
 
-@cli.command(short_help="")  # TODO
+@cli.command(short_help="Set Pv PI MCU clock to match device clock")
 def set_mcu_time():
-    pvpi = PvPiNode()
-    print("Checking connection...")
-    print(f"Alive: {pvpi.get_alive()}")
+    pvpi = PvPiClient()
+    logger.info(f"Alive: {pvpi.get_alive()}")
     pvpi.set_mcu_time()
-    print(f"Current MCU time: {pvpi.get_mcu_time()}")
+    logger.info(f"Current MCU time: {pvpi.get_mcu_time()}")
 
 
 @cli.command(name="test")
 def pvpi_connection_test():
-    pvpi = PvPiNode()
-    print("Running PV PI function test!")
-    print("Checking connection...")
-    print(f"Alive: {pvpi.get_alive()}")
-    pvpi.set_mcu_time()
+    client = PvPiClient()
+    logger.info("Running PV PI function test!")
+    logger.info("Checking connection...")
 
-    print("\n####PV PI TIME test!####")
-    print(f"Current MCU time: {pvpi.get_mcu_time()}")
-    print(f"System time: {datetime.now().strftime('%y-%m-%d %H:%M:%S')}")
+    is_alive = client.get_alive()
+    client.set_mcu_time()
+    mcu_time = client.get_mcu_time()
+    logger.info("Alive: %s", is_alive)
+    logger.info("Current MCU time: %s", mcu_time)
+    logger.info("System time: %s", datetime.now().strftime("%y-%m-%d %H:%M:%S"))
 
-    print(f"\n####PV PI Setting States TEST####")
-    print(f"PV PI Set MPPT State: {pvpi.set_mppt_state("ON")}")
-    print(f"PV PI Set TS State: {pvpi.set_ts_state("OFF")}")
-    print(f"PV PI Set Charge State: {pvpi.set_charge_state("ON")}")
+    logger.info("PV PI Setting States")
+    logger.info(f"PV PI Set MPPT State: {client.set_mppt_state('ON')}")
+    logger.info(f"PV PI Set TS State: {client.set_ts_state('OFF')}")
+    logger.info(f"PV PI Set Charge State: {client.set_charge_state('ON')}")
+    logger.info(f"PV PI Set MAX Charge Current: {client.set_max_charge_current(10)}")
+    logger.info(f"PV PI Set Wakeup Voltage: {client.set_wakeup_voltage(13)}")
 
-    print(f"\n####PV PI Set MAX Charge Current TEST####")
-    print(f"PV PI Set MAX Charge Current: {pvpi.set_max_charge_current(10)}")
+    logger.info(f"PV PI Charge State code: {client.get_charge_state_code()}")
+    logger.info(f"PV PI Charge State: {client.get_charge_state()}")
 
-    print(f"\n####PV PI Set Wakeup Voltage TEST####")
-    print(f"PV PI Set Wakeup Voltage: {pvpi.set_wakeup_voltage(13)}")
+    logger.info(f"PV PI Fault code: {client.get_fault_code()}")
+    logger.info(f"PV PI Fault States: {client.get_fault_states()}")
 
-    print(f"\n####PV PI Charge and Fault Status TEST####")
-    print(f"PV PI Charge State code: {pvpi.get_charge_state_code()}")
-    print(f"PV PI Charge State: {pvpi.get_charge_state()}")
+    logger.info("PV PI Battery and PV input #")
 
-    print(f"PV PI fault code: {pvpi.get_fault_code()}")
-    print(f"PV PI fault States: {pvpi.get_fault_states()}")
-
-    print(f"\n####PV PI Battery and PV input TEST####")
-
-    bat_v = pvpi.get_battery_voltage()
-    bat_c = pvpi.get_battery_current()
-    pv_v = pvpi.get_pv_voltage()
-    pv_c = pvpi.get_pv_current()
-    temperature = pvpi.get_board_temp()
-
-    print(f"Battery: {bat_v} V, {bat_c} A")
-    print(f"PV: {pv_v} V, {pv_c} A")
-    print(f"PV PI Temp: {temperature}C")
+    bat_v = client.get_battery_voltage()
+    bat_c = client.get_battery_current()
+    pv_v = client.get_pv_voltage()
+    pv_c = client.get_pv_current()
+    temperature = client.get_board_temp()
+    logger.info("Battery: %s V, %s A", bat_v, bat_c)
+    logger.info("PV: %s V, %s A", pv_v, pv_c)
+    logger.info("PV PI Temp: %sC", temperature)
 
 
 @cli.command()
-def manager():
-    from pvpi.services.system_manager import SystemManager
+@click.option("--config", type=click.Path(exists=True, file_okay=True, dir_okay=False))
+def run_uart_proxy(config: str = None):
+    # TODO grab config
 
-    sys_manager = SystemManager()
-    sys_manager.setup()
-    sys_manager.run_manager()
+    try:
+        serial_interface = SerialInterface()
+    except (serial.SerialException, Exception):
+        logging.error("Failed to open serial port")
+        raise
 
+    try:
+        proxy_server = ZmqSerialProxy(serial_interface=serial_interface)
+    except Exception:
+        logging.error("Failed to ...")  # TODO
+        serial_interface.close()
+        raise
+
+    asyncio.run(proxy_server.run())
 
 @cli.command()
-def uart():
-    from pvpi.services.uart_zmq_service import uart_zmq_service
-    from pvpi.config import PvPiConfig
-
-    config = PvPiConfig()
-    uart_zmq_service(uart_port=config.uart_port)
+@click.option("--config", type=click.Path(exists=True, file_okay=True, dir_okay=False))
+def run_system_logger(config: str = None):
+    # TODO grab config
+    ...
 
 
 if __name__ == "__main__":

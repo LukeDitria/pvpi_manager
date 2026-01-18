@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 class DailyCSVLogger:
-    def __init__(self, log_dir: str = "logs", retention_days: int = 7):
+    def __init__(self, log_dir: Path, retention_days: int = 7):
         """
         Daily CSV logger with automatic deletion of old files.
 
@@ -12,7 +12,7 @@ class DailyCSVLogger:
             log_dir: Directory to store CSV logs
             retention_days: Number of days to keep old logs
         """
-        self.log_dir = Path(log_dir)
+        self.log_dir = log_dir
         self.log_dir.mkdir(exist_ok=True)
         self.retention_days = retention_days
         self.headers = [
@@ -21,8 +21,8 @@ class DailyCSVLogger:
             "Battery Current",
             "PV Voltage",
             "PV Current",
-            "PV PI Temperature"
-            ]
+            "PV PI Temperature",
+        ]
 
         self.current_file = self._get_today_file()
 
@@ -64,14 +64,6 @@ class DailyCSVLogger:
         now = datetime.now()
         datetime_str = now.strftime("%Y-%m-%d %H:%M:%S")
 
-        row = [
-            datetime_str, 
-            bat_v, bat_c, 
-            pv_v, pv_c,
-            temp]
+        row = [datetime_str, bat_v, bat_c, pv_v, pv_c, temp]
 
         self.log_row(row)
-        
-
-
-

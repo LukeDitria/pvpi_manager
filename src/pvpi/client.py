@@ -1,194 +1,135 @@
-import time as pytime
-from datetime import datetime, time
 import logging
-import zmq
+from datetime import datetime, time
+from enum import StrEnum
+
+from pvpi.transports import BaseTransportInterface, ZmqSerialProxyInterface, SerialInterface
+
+_logger = logging.getLogger(__name__)
 
 
-class PvPiNode:
-    """High-level UART interface for communicating with the PV PI"""
-    charge_states = [
-        "Not charging",
-        "Trickle Charge (VBAT < VBAT_SHORT)",
-        "Pre-Charge (VBAT < VBAT_LOWV)",
-        "Fast Charge (CC mode)",
-        "Taper Charge (CV mode)",
-        "NA",
-        "Top-off Timer Charge",
-        "Charge Termination Done"
-    ]
-
-    fault_states = [
-        "NA"
-        "DRV_SUP pin voltage",
-        "Charge safety timer",
-        "Thermal shutdown",
-        "Battery over-voltage",
-        "Battery over-current",
-        "Input over-voltage",
-        "Input under-voltage",
-    ]
+class PvPiUnits(StrEnum):
+    mV = "MILLIVOLTS"
+    mA = "MILLIAMPS"
 
 
-    def __init__(self, timeout=2):
-        self.timeout = timeout
-        self.ser = None
-        self.connect()
+class PvPiChargeStates(StrEnum):
+    NotCharging = "Not charging"
+    TrickleCharge = "Trickle Charge (VBAT < VBAT_SHORT)"
+    PreCharge = "Pre-Charge (VBAT < VBAT_LOWV)"
+    FastCharge = "Fast Charge (CC mode)"
+    TaperCharge = "Taper Charge (CV mode)"
+    NA = "NA"
+    TopOffTimerCharge = "Top-off Timer Charge"
+    ChargeTerminationDone = "Charge Termination Done"
 
-    # ---------------------- Connection Management ---------------------- #
-    def connect(self):
-        """Open the connection to the UART Server."""
-        ZMQ_PORT = "tcp://127.0.0.1:5555"
 
-        try:
-            self.context = zmq.Context()
-            logging.info("Connecting to UART server...")
-            # The DEALER socket is used for asynchronous communication with a ROUTER
-            self.socket = self.context.socket(zmq.DEALER)
-            # Give the client a unique identity (optional but good practice)
-            self.socket.setsockopt(zmq.IDENTITY, b"client_" + str(pytime.time()).encode())
-            self.socket.connect(ZMQ_PORT)
-        except Exception as e:
-            raise ConnectionError(f"Failed to connect to UART Server {ZMQ_PORT}: {e}")
+class PvPiFaultStates(StrEnum):
+    NA = "NA"
+    DrvSupPinVoltage = "DRV_SUP pin voltage"
+    ChargeSafetyTimer = "Charge safety timer"
+    ThermalShutdown = "Thermal shutdown"
+    BatteryOverVoltage = "Battery over-voltage"
+    BatteryOverCurrent = "Battery over-current"
+    InputOverVoltage = "Input over-voltage"
+    InputUnderVoltage = "Input under-voltage"
 
-    def disconnect(self):
-        """Close the serial connection."""
-        if self.ser and self.ser.is_open:
-            self.ser.close()
-            logging.info("Serial connection closed")
 
-    def _send_command(self, data_request):
-        try:
-            # Send the request
-            # self.socket.send_string(data_request)
-            self.socket.send_multipart([b"send_command", data_request.encode('utf-8')])
+def _get_interface():
+    try:
+        return ZmqSerialProxyInterface()
+    except Exception:
+        _logger.debug("")
+        pass
+    return SerialInterface()
 
-            # Wait for the reply from the server
-            reply_parts = self.socket.recv_multipart()
-            reply = reply_parts[1].decode('utf-8')
 
-            return reply
+class PvPiClient:
+    def __init__(self, interface: BaseTransportInterface = None):
+        self._interface = interface or _get_interface()
 
-        except Exception as e:
-            logging.info(f"An error occurred in the client: {e}")
-            return None
+    def get_alive(self) -> bool:
+        """Return True if PV PI is responsive"""
+        return self._interface.write(message=b"GET_ALIVE") == "ALIVE"
 
-    # ---------------------- Helper Commands ---------------------- #
-    def get_alive(self):
-        """Check if PV PI is responsive."""
-        resp = self._send_command("GET_ALIVE")
-        return resp == "ALIVE"
-
-    def get_battery_voltage(self):
-        """Read battery voltage."""
-        resp = self._send_command("GET_BAT_V")
-
-        if resp.split(",")[0] == "MILLIVOLTS":
-            voltage = int(resp.split(",")[1]) / 1000
-            return voltage
+    def get_battery_voltage(self) -> float:
+        """Read battery voltage (V)"""
+        resp = self._interface.write(b"GET_BAT_V").decode()
+        unit, value = resp.split(",")
+        if unit == PvPiUnits.mV:
+            return int(value) / 1000
         else:
-            logging.warning("Failed to get Battery Voltage!")
-            return None
+            raise ValueError("Failed to read battery voltage")
 
-    def get_battery_current(self):
-        """Read battery current."""
-        resp = self._send_command("GET_BAT_C")
-
-        if resp.split(",")[0] == "MILLIAMPS":
-            current = int(resp.split(",")[1]) / 1000
-            return current
+    def get_battery_current(self) -> float:
+        """Read battery current (A)"""
+        resp = self._interface.write(b"GET_BAT_C").decode()
+        unit, value = resp.split(",")
+        if unit == PvPiUnits.mA:
+            return int(value) / 1000
         else:
-            logging.warning("Failed to get Charge Current!")
-            return None
+            raise ValueError("Failed to read battery current")
 
-    def get_pv_voltage(self):
-        """Read PV (solar) voltage."""
-        resp = self._send_command("GET_PV_V")
-
-        if resp.split(",")[0] == "MILLIVOLTS":
-            voltage = int(resp.split(",")[1]) / 1000
-            return voltage
+    def get_pv_voltage(self) -> float:
+        """Read PV (solar) voltage (V)"""
+        resp = self._interface.write(b"GET_PV_V").decode()
+        unit, value = resp.split(",")
+        if unit == PvPiUnits.mV:
+            return int(value) / 1000
         else:
-            logging.warning("Failed to get PV Voltage!")
-            return None
+            raise ValueError("Failed to read PV (solar) voltage")
 
     def get_pv_current(self):
-        """Read PV (solar) current."""
-        resp = self._send_command("GET_PV_C")
-
-        if resp.split(",")[0] == "MILLIAMPS":
-            current = int(resp.split(",")[1]) / 1000
-            return current
+        """Read PV (solar) current (A)"""
+        resp = self._interface.write(b"GET_PV_C").decode()
+        unit, value = resp.split(",")
+        if unit == PvPiUnits.mA:
+            return int(value) / 1000
         else:
-            logging.warning("Failed to get PV Current!")
-            return None
+            raise ValueError("Failed to read PV (solar) current")
 
-    def get_board_temp(self):
-        """Get the PVPI Board temperature"""
-        resp = self._send_command("GET_TEMP")
-        if not resp:
-            return None
-
-        if not resp.split(",")[0] == "TEMP":
-            return None
-
-        try:
-            temperature = int(resp.split(",")[1])
-            return temperature
-        except Exception as e:
-            logging.warning(f"Failed to get PV PI Temperature '{resp}': {e}")
-            return None
+    def get_board_temp(self) -> int:
+        """Get the PVPI Board temperature (Degrees Celsius)"""
+        resp = self._interface.write(b"GET_TEMP").decode()
+        type_, value = resp.split(",")
+        if type_ == "TEMP":
+            return int(value)  # TODO for real? int? also degs?
+        else:
+            raise ValueError("Failed to read board temperature")
 
     # ---------------------- Time Sync Commands ---------------------- #
-    def set_mcu_time(self):
-        """Send current system time to STM32 RTC."""
-        now = datetime.now()
-        cmd = f"SET_TIME,{now.year % 100},{now.month},{now.day},{now.hour},{now.minute},{now.second}"
-        resp = self._send_command(cmd)
-        logging.info(f"Set MCU to System time: {now.strftime('%y-%m-%d %H:%M:%S')}")
-        return resp
+    def set_mcu_time(self, dt: datetime | None = None):
+        """Set STM32 RTC"""
+        dt = dt or datetime.now()
+        cmd = f"SET_TIME,{dt.year % 100},{dt.month},{dt.day},{dt.hour},{dt.minute},{dt.second}"
+        resp = self._interface.write(cmd.encode())
+        logging.info(f"Set MCU to System time: {dt.strftime('%y-%m-%d %H:%M:%S')}")
+        return resp  # TODO what is resp and lets just return the obj rather than log
 
-    def get_mcu_time(self):
-        """Get RTC time from STM32 and return datetime."""
-        resp = self._send_command("GET_TIME")
-        if not resp:
-            return None
+    def get_mcu_time(self) -> datetime:
+        """Read STM32 RTC"""
+        resp = self._interface.write(b"GET_TIME").decode()
+        type_, *values = resp.split(",")
+        if type_ == "GET_TIME":
+            try:
+                year, month, day, hour, minute, second = map(int, values)
+                dt = datetime(2000 + year, month, day, hour, minute, second)
+                return dt
+            except Exception:
+                _logger.error("Failed to parse STM32 RTC response %b", values)
+                raise
+        else:
+            raise ValueError("Failed to read STM32 RTC")
 
-        if not resp.split(",")[0] == "GET_TIME":
-            return None
+    def set_alarm(self, pyt: time):
+        """Set STM32 alarm using a datetime time object"""  # TODO update
+        cmd = f"SET_ALARM,{pyt.hour},{pyt.minute},{pyt.second}".encode()
+        resp = self._interface.write(cmd).decode().replace(" ", "")
+        type_, value = resp.split(",")
+        # TODO explain what's recvd
 
-        try:
-            y, m, d, H, M, S = map(int, resp.split(",")[1:])
-            full_year = 2000 + y
-            dt = datetime(full_year, m, d, H, M, S)
-            return dt
-        except Exception as e:
-            logging.warning(f"Failed to parse PV PI time response '{resp}': {e}")
-            return None
-
-    def set_system_time(self):
-        """Set Raspberry Pi system clock from datetime object."""
-        dt = self.get_mcu_time()
-        time_str = dt.strftime("%Y-%m-%d %H:%M:%S")
-
-        try:
-            # Needs root privileges!
-            subprocess.run(
-                ["sudo", "date", "-s", time_str],
-                check=True
-            )
-            return True
-        except Exception as e:
-            logging.error(f"Failed to set system time: {e}")
-            return False
-
-    def set_alarm(self, alarm_time: time):
-        """Set STM32 alarm using a datetime time object."""
-        cmd = f"SET_ALARM,{alarm_time.hour},{alarm_time.minute},{alarm_time.second}"
-        resp = self._send_command(cmd).replace(" ", "")
         cmd_state = resp.split(",")[1] if "," in resp else "FAIL"
-
         if cmd_state == "OK":
-            logging.info(f"PV PI Alarm Set at: {alarm_time}")
+            logging.info(f"PV PI Alarm Set at: {pyt}")
             return True
         else:
             logging.warning("Failed to set alarm!")
@@ -196,8 +137,12 @@ class PvPiNode:
 
     # ---------------------- Power Commands ---------------------- #
     def power_off(self, delay_s=30):
-        """Schedule power-off after delay (seconds)."""
-        resp = self._send_command(f"POWER_OFF,{delay_s}")
+        """Schedule power-off after delay (seconds)"""
+        cmd = f"POWER_OFF,{delay_s}".encode()
+        resp = self._interface.write(cmd).decode()
+        type_, value = resp.split(",")
+        # TODO explain what's recvd
+
         cmd_state = resp.split(",")[1] if "," in resp else "FAIL"
 
         if cmd_state == "OK":
@@ -207,12 +152,14 @@ class PvPiNode:
             logging.warning("Failed to Set Power off!")
             return False
 
-    def set_watchdog(self, watchdog_period):
-        """Set the Power watchdog."""
-        cmd = f"WATCHDOG_ON,{watchdog_period}"
-        resp = self._send_command(cmd)
-        cmd_state = resp.split(",")[1] if "," in resp else "FAIL"
+    def set_watchdog(self, watchdog_period):  # TODO unit
+        """Set the power watchdog"""
+        cmd = f"WATCHDOG_ON,{watchdog_period}".encode()
+        resp = self._interface.write(cmd).decode()
+        type_, value = resp.split(",")
+        # TODO explain what's recvd
 
+        cmd_state = resp.split(",")[1] if "," in resp else "FAIL"
         if cmd_state == "OK":
             logging.info(f"PV PI Watchdog set with period: {watchdog_period}")
             return True
@@ -221,33 +168,30 @@ class PvPiNode:
             return False
 
     def stop_watchdog(self):
-        """Stop the Power watchdog."""
-        try:
-            resp = self._send_command("WATCHDOG_OFF")
-            cmd_state = resp.split(",")[1] if "," in resp else "FAIL"
+        """Stop the Power watchdog"""
+        resp = self._interface.write(b"WATCHDOG_OFF").decode()
+        type_, value = resp.split(",")
+        # TODO explain what's recvd
 
-            if cmd_state == "OK":
-                logging.info("PV PI Watchdog OFF")
-                return True
-            else:
-                logging.warning("Failed to Stop Watchdog!")
-                return False
-        except Exception as e:
-            logging.error(f"Error stopping watchdog: {e}")
-            return False
-
-    def set_wakeup_voltage(self, voltage):
-        """Set the voltage at which the PV PI will wake the system."""
-        if voltage < 11.5 or voltage > 14.4:
-            logging.warning(f"Voltage Value {voltage} is invalid! Must be >11.5 and <14.4")
-            return False
-
-        # The PV PI takes a milivoltage
-        milivoltage = voltage * 1000
-        cmd = f"SET_WAKEUP_MILIVOLT,{milivoltage}"
-        resp = self._send_command(cmd)
         cmd_state = resp.split(",")[1] if "," in resp else "FAIL"
+        if cmd_state == "OK":
+            logging.info("PV PI Watchdog OFF")
+            return True
+        else:
+            raise ValueError("Faield to stop watchdog")
 
+    def set_wakeup_voltage(self, voltage: float):
+        """Set the voltage at which the PV PI will wake the system"""
+        if voltage < 11.5 or voltage > 14.4:
+            raise ValueError(f"Voltage value {voltage} is invalid! Must be >11.5 and <14.4")
+
+        millivolts = voltage * 1000
+        cmd = f"SET_WAKEUP_MILIVOLT,{millivolts}".encode()
+        resp = self._interface.write(cmd).decode()
+        type_, value = resp.split(",")
+        # TODO explain what's recvd
+
+        cmd_state = resp.split(",")[1] if "," in resp else "FAIL"
         if cmd_state == "OK":
             logging.info(f"PV PI Wakeup Voltage set to: {voltage}")
             return True
@@ -255,31 +199,33 @@ class PvPiNode:
             logging.warning(f"Failed to set Wakeup Voltage {voltage}, Response: {resp}")
             return False
 
-    def set_max_charge_current(self, current):
-        """Set the maxumin battery charge current for the the PV PI."""
+    def set_max_charge_current(self, current: float):
+        """Set the maxumin battery charge current for the the PV PI"""
         if current < 0.4 or current > 10:
-            logging.warning(f"Current Value {current} is invalid! Must be >0.4 and <10")
-            return False
+            raise ValueError(f"Current value {current} is invalid! Must be >0.4 and <10")
 
-        # The PV PI takes a miliamps
-        miliamps = current * 1000
+        milliamps = current * 1000
+        cmd = f"SET_CHARGE_MILIAMPS,{milliamps}".encode()
+        resp = self._interface.write(cmd).decode()
+        type_, value = resp.split(",")
+        # TODO explain what's recvd
 
-        cmd = f"SET_CHARGE_MILIAMPS,{miliamps}"
-        resp = self._send_command(cmd)
         cmd_state = resp.split(",")[1] if "," in resp else "FAIL"
-
         if cmd_state == "OK":
             logging.info(f"PV PI Battery Charge Current set to: {current}")
             return True
         else:
             logging.warning(f"Failed to set Battery Charge Current {current}, Response: {resp}")
             return False
+
     # ---------------------- Fault and Status Commands ---------------------- #
     def get_charge_state_code(self):
         """Get PV PI charge state code"""
-        resp = self._send_command(f"GET_CHARGE_STATE")
-        cmd_state = resp.split(",")[0] if "," in resp else "FAIL"
+        resp = self._interface.write(b"GET_CHARGE_STATE").decode()
+        type_, value = resp.split(",")
+        # TODO explain what's recvd
 
+        cmd_state = resp.split(",")[0] if "," in resp else "FAIL"
         if cmd_state == "CHARGE_STATE":
             charge_state_code = int(resp.split(",")[1])
             return charge_state_code
@@ -287,7 +233,7 @@ class PvPiNode:
             logging.warning("Failed to get charge state!")
             return None
 
-    def get_charge_state(self):
+    def get_charge_state(self):  # TODO
         """Get PV PI charge state string"""
         charge_state_code = self.get_charge_state_code()
         if charge_state_code is not None:
@@ -297,9 +243,11 @@ class PvPiNode:
 
     def get_fault_code(self):
         """Get PV PI fault code"""
-        resp = self._send_command(f"GET_FAULT_CODE")
-        cmd_state = resp.split(",")[0] if "," in resp else "FAIL"
+        resp = self._interface.write(b"GET_FAULT_CODE").decode()
+        type_, value = resp.split(",")
+        # TODO explain what's recvd
 
+        cmd_state = resp.split(",")[0] if "," in resp else "FAIL"
         if cmd_state == "FAULT_CODE":
             fault_code = int(resp.split(",")[1])
             return fault_code
@@ -310,8 +258,8 @@ class PvPiNode:
     def get_fault_states(self):
         """Get PV PI fault states as string"""
         fault_code = self.get_fault_code()
-        if fault_code is not None:
-            fault_states_list = [self.fault_states[bit] for bit in range(8) if fault_code & (1 << bit)]
+        if fault_code is not None:  # FIXME
+            fault_states_list = [PvPiFaultStates[bit] for bit in range(8) if fault_code & (1 << bit)]
             return fault_states_list
         else:
             return []
@@ -324,10 +272,12 @@ class PvPiNode:
             logging.warning(f"INVAILID STATE {state}")
             return "ERROR"
 
-        cmd = f"SET_MPPT_STATE,{state}"
-        resp = self._send_command(cmd)
-        cmd_state = resp.split(",")[1] if "," in resp else "FAIL"
+        cmd = f"SET_MPPT_STATE,{state}".encode()
+        resp = self._interface.write(cmd).decode()
+        type_, value = resp.split(",")
+        # TODO explain what's recvd
 
+        cmd_state = resp.split(",")[1] if "," in resp else "FAIL"
         if cmd_state == "OK":
             logging.info(f"PV PI MPPT set: {state}")
             return state
@@ -342,10 +292,12 @@ class PvPiNode:
             logging.warning(f"INVAILID STATE {state}")
             return "ERROR"
 
-        cmd = f"SET_TS_STATE,{state}"
-        resp = self._send_command(cmd)
-        cmd_state = resp.split(",")[1] if "," in resp else "FAIL"
+        cmd = f"SET_TS_STATE,{state}".encode()
+        resp = self._interface.write(cmd).decode()
+        type_, value = resp.split(",")
+        # TODO explain what's recvd
 
+        cmd_state = resp.split(",")[1] if "," in resp else "FAIL"
         if cmd_state == "OK":
             logging.info(f"PV PI TS set: {state}")
             return state
@@ -360,16 +312,15 @@ class PvPiNode:
             logging.warning(f"INVAILID STATE {state}")
             return "ERROR"
 
-        cmd = f"SET_CHARGE_STATE,{state}"
-        resp = self._send_command(cmd)
-        cmd_state = resp.split(",")[1] if "," in resp else "FAIL"
+        cmd = f"SET_CHARGE_STATE,{state}".encode()
+        resp = self._interface.write(cmd).decode()
+        type_, value = resp.split(",")
+        # TODO explain what's recvd
 
+        cmd_state = resp.split(",")[1] if "," in resp else "FAIL"
         if cmd_state == "OK":
             logging.info(f"PV PI Charging set: {state}")
             return state
         else:
             logging.warning(f"Failed to set PV PI Charging! Response: {resp}")
             return "ERROR"
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.disconnect()

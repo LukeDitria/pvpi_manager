@@ -4,12 +4,10 @@ import subprocess
 from importlib import resources
 from pathlib import Path
 
-_SERVICES = [
-    "pvpi_manager.service",
-    "pvpi_uart.service"
-]
+_SERVICES = ["pvpi_manager.service", "pvpi_uart.service"]
 
 _logger = logging.getLogger(__name__)
+
 
 def install_systemd(*, user: bool = True) -> None:
     _logger.info("Install systemd services as %s", "user" if user else "root")

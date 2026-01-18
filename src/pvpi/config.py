@@ -1,21 +1,19 @@
 from datetime import time
 from pathlib import Path
-import json
+from typing import Literal
 
+from platformdirs import user_data_dir
+from pydantic import Field
 from pydantic_settings import (
     BaseSettings,
-    SettingsConfigDict,
-    JsonConfigSettingsSource,
 )
 
 
-CONFIG_PATH = Path("config.json")
-
-class PvPiConfig(BaseSettings):
-    log_period: int = 5
-    off_delay: int = 20
-    startup_delay: int = 20
-    low_bat_volt: float = 12.5
+class PvPiConfig(BaseSettings, extra="forbid"):
+    log_period: int = Field(5, description="Minutes between logging Pv Pi system metrics")
+    off_delay: int = Field(20, description="")
+    startup_delay: int = Field(20, description="")
+    low_bat_volt: float = Field(12.5, description="")
 
     schedule_time: bool = False
     shutdown_time: time = time(22, 0)
@@ -23,37 +21,21 @@ class PvPiConfig(BaseSettings):
 
     uart_port: str = "/dev/ttyAMA0"
 
-    log_pvpi_stats: bool = False
-    data_log_path: str = "logs"
-    log_last_days: int = 7
-
-    enable_watchdog: bool = False
-
-    time_pi2mcu: bool = False
-    time_mcu2pi: bool = False
-
-    model_config = SettingsConfigDict(
-        env_prefix="PVPI_",
-        json_file=CONFIG_PATH,
-        extra="ignore"
+    # CSV logger todo rename
+    log_pvpi_stats: bool = Field(False, description="Enable CSV logging of Pv Pi metrics")
+    data_log_path: Path = Field(
+        default_factory=lambda: Path(user_data_dir("pvpi")), description="Pv Pi CSV log file path"
     )
+    keep_for_days: int = 7
 
-    def write_default_config(self):
-        if not CONFIG_PATH.exists():
-            defaults = self.model_dump(mode="json")
-            CONFIG_PATH.write_text(json.dumps(defaults, indent=2))
+    enable_watchdog: bool = False  # TODO explain
 
-    @classmethod
-    def settings_customise_sources(
-        cls,
-        settings_cls,
-        init_settings,
-        env_settings,
-        dotenv_settings,
-        file_secret_settings,
-    ):
-        return (
-            init_settings,
-            JsonConfigSettingsSource(settings_cls),
-            env_settings,
-        )
+    # TODO:
+    main_clock: Literal["pi", "mcu"] | None = Field(
+        None,
+        description="Set main clock to either Raspberry Pi or Pv PI MCU, and set the other to match. "
+        "Set config value to None to update neither's clock."
+        "Setting PV Pi MCU as main clock requires root permissions to set Raspberry Pi clock to match.",
+    )
+    time_pi2mcu: bool = Field(False, description="Set Pv Pi's MCU clock to match Raspberry Pi's clock")
+    time_mcu2pi: bool = Field(False, description="Set Raspberry Pi's clock to match Pv Pi's MCU clock")

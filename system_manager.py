@@ -77,10 +77,10 @@ class SystemManager:
                     break
                 
                 if self.config.enable_watchdog:
-                    # Subtract 10 seconds to make sure dog is fed before timer expires
-                    if (curr_time - wd_prev_time).seconds >= (self.config.watchdog_period_mins * 60 - 10):
+                    # Feed watchdog 2x every period to make sure the timer doesn't run out
+                    if (curr_time - wd_prev_time).seconds >= (self.config.watchdog_period_mins/2 * 60):
                         wd_prev_time = datetime.now()
-                        logging.info(f"Alive: {self.pvpi.get_alive()}")
+                        logging.info(f"Watchdog Alive: {self.pvpi.get_alive()}")
 
                 if (curr_time - prev_time).seconds >= self.config.log_period * 60:
                     prev_time = datetime.now()

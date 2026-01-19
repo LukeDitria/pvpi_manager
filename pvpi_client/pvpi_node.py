@@ -149,8 +149,12 @@ class PvPiNode:
         now = datetime.now()
         cmd = f"SET_TIME,{now.year % 100},{now.month},{now.day},{now.hour},{now.minute},{now.second}"
         resp = self._send_command(cmd)
-        logging.info(f"Set MCU to System time: {now.strftime('%y-%m-%d %H:%M:%S')}")
-        return resp
+        cmd_state = resp.split(",")[1] if "," in resp else "FAIL"
+        if cmd_state == "OK":
+            logging.info(f"Set MCU to System time: {now.strftime('%y-%m-%d %H:%M:%S')}")
+            return True
+        else:
+            return False
 
     def get_mcu_time(self):
         """Get RTC time from STM32 and return datetime."""

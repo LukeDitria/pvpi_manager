@@ -57,19 +57,31 @@ class SystemManager:
 
         logging.info(f"Watchdog: {'On' if self.config.enable_watchdog else 'Off'}")
         if self.config.enable_watchdog:
-            self.pvpi.set_watchdog(2 * self.config.log_period)
+            self.pvpi.set_watchdog(self.config.watchdog_period_mins)
 
+        self.pvpi.set_wakeup_voltage(self.config.wake_up_voltage)
+        logging.info(f"Wakeup Voltage set at: {self.config.wake_up_voltage}V")
 
     def run_manager(self):
         try:
             logging.info(f"######BEGIN#######")
             prev_time = datetime.now() - timedelta(hours=1)
+
+            if self.config.enable_watchdog:
+                wd_prev_time = datetime.now() - timedelta(hours=1)
+
             while True:
                 curr_time = datetime.now()
                 if curr_time.time() >= self.config.shutdown_time and self.config.schedule_time:
                     logging.info(f"Shutdown Time!")
                     break
                 
+                if self.config.enable_watchdog:
+                    # Subtract 10 seconds to make sure dog is fed before timer expires
+                    if (curr_time - wd_prev_time).seconds >= (self.config.watchdog_period_mins * 60 - 10):
+                        wd_prev_time = datetime.now()
+                        logging.info(f"Alive: {self.pvpi.get_alive()}")
+
                 if (curr_time - prev_time).seconds >= self.config.log_period * 60:
                     prev_time = datetime.now()
 
@@ -127,8 +139,12 @@ class SystemManager:
                 if self.config.schedule_time:
                     self.pvpi.set_alarm(self.config.wakeup_time)
 
-                self.pvpi.stop_watchdog()
-                self.pvpi.power_off_with_delay(self.config.off_delay)
+                if self.config.disable_watchdog_on_shutdown:
+                    self.pvpi.stop_watchdog()
+
+                if self.config.power_off_on_shutdown:
+                    self.pvpi.power_off_with_delay(self.config.power_off_delay)
+
                 logging.info("SHUTDOWN NOW")
                 pytime.sleep(1)
                 os.system("sudo shutdown now")

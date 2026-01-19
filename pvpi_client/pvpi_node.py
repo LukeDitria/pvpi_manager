@@ -255,10 +255,10 @@ class PvPiNode:
 
         if cmd_state == "OK":
             logging.info(f"PV PI Wakeup Voltage set to: {voltage}")
-            return True
+            return str(voltage)
         else:
             logging.warning(f"Failed to set Wakeup Voltage {voltage}, Response: {resp}")
-            return False
+            return "ERROR"
 
     def set_max_charge_current(self, current):
         """Set the maxumin battery charge current for the the PV PI."""
@@ -275,10 +275,10 @@ class PvPiNode:
 
         if cmd_state == "OK":
             logging.info(f"PV PI Battery Charge Current set to: {current}")
-            return True
+            return str(current)
         else:
             logging.warning(f"Failed to set Battery Charge Current {current}, Response: {resp}")
-            return False
+            return "ERROR"
     # ---------------------- Fault and Status Commands ---------------------- #
     def get_charge_state_code(self):
         """Get PV PI charge state code"""

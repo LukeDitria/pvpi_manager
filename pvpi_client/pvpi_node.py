@@ -200,7 +200,7 @@ class PvPiNode:
             return False
 
     # ---------------------- Power Commands ---------------------- #
-    def power_off(self, delay_s=30):
+    def power_off_with_delay(self, delay_s=30):
         """Schedule power-off after delay (seconds)."""
         resp = self._send_command(f"POWER_OFF,{delay_s}")
         cmd_state = resp.split(",")[1] if "," in resp else "FAIL"

@@ -128,7 +128,7 @@ class SystemManager:
                     self.pvpi.set_alarm(self.config.wakeup_time)
 
                 self.pvpi.stop_watchdog()
-                self.pvpi.power_off(self.config.off_delay)
+                self.pvpi.power_off_with_delay(self.config.off_delay)
                 logging.info("SHUTDOWN NOW")
                 pytime.sleep(1)
                 os.system("sudo shutdown now")

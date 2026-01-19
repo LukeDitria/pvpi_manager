@@ -13,6 +13,9 @@ def main():
     print(f"Current MCU time: {pvpi.get_mcu_time()}")
     print(f"System time: {datetime.now().strftime('%y-%m-%d %H:%M:%S')}")
 
+    print(f"Set PV PI time from system time: {pvpi.set_mcu_time()}")
+    print(f"New MCU time: {pvpi.get_mcu_time()}")
+
     print(f"\n####PV PI Setting States TEST####")
     print(f"PV PI Set MPPT State: {pvpi.set_mppt_state('ON')}")
     print(f"PV PI Set TS State: {pvpi.set_ts_state('OFF')}")

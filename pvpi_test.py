@@ -14,9 +14,9 @@ def main():
     print(f"System time: {datetime.now().strftime('%y-%m-%d %H:%M:%S')}")
 
     print(f"\n####PV PI Setting States TEST####")
-    print(f"PV PI Set MPPT State: {pvpi.set_mppt_state("ON")}")
-    print(f"PV PI Set TS State: {pvpi.set_ts_state("OFF")}")
-    print(f"PV PI Set Charge State: {pvpi.set_charge_state("ON")}")
+    print(f"PV PI Set MPPT State: {pvpi.set_mppt_state('ON')}")
+    print(f"PV PI Set TS State: {pvpi.set_ts_state('OFF')}")
+    print(f"PV PI Set Charge State: {pvpi.set_charge_state('ON')}")
 
     print(f"\n####PV PI Set MAX Charge Current TEST####")
     print(f"PV PI Set MAX Charge Current: {pvpi.set_max_charge_current(10)}")

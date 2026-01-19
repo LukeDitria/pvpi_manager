@@ -1,6 +1,9 @@
 # PVPI_Manager
 Automatic device manager for the PVPI <br>
 TODO:<br>
+Create flag/notification from system manager so all pvpi nodes can know when system manager has started (after start-up delay). Could set flag on UART server with special command?<br>
+Create location based sunrise to sunset schedule<br> 
+Create "periodic process" example template? A short bit of code/method that will run once and then shut down the device?<br>
 Create manual UART communication examples<br>
 
 

@@ -4,13 +4,18 @@ import subprocess
 from importlib import resources
 from pathlib import Path
 
+from pvpi.utils import is_linux
+
 _SERVICES = ["pvpi_manager.service", "pvpi_uart.service"]
 
 _logger = logging.getLogger(__name__)
 
 
 def install_systemd(*, user: bool = True) -> None:
-    _logger.info("Install systemd services as %s", "user" if user else "root")
+    if not is_linux():
+        raise OSError("System is not linux")
+
+    _logger.info("Installing systemd services as %s", "user" if user else "root")
     if user:
         target_dir = Path.home() / ".config/systemd/user"
         systemctl = ["systemctl", "--user"]

@@ -1,6 +1,9 @@
 # PVPI_Manager
 Automatic device manager for the PVPI   
 TODO:  
+Create flag/notification from system manager so all pvpi nodes can know when system manager has started (after start-up delay). Could set flag on UART server with special command?  
+Create location based sunrise to sunset schedule   
+Create "periodic process" example template? A short bit of code/method that will run once and then shut down the device?  
 Create manual UART communication examples  
 
 
@@ -77,6 +80,7 @@ journalctl -u uart_server.service -e
 And see that the UART server cannot find the PV PI, then either UART has not been enabled or the wrong location is defined in the config.json.  
 To update the port location, change the "uart_port" parameter of the config.json file to your UART port location.  
 For the Raspberry Pi this is usually /dev/ttyAMA0    
+For the Raspberry Pi ZERO this is usually /dev/ttyS0    
 For other SBCs you'll need to consult the device documentation.  
   
 Once you have changed the "uart_port" parameter, restart the uart server.

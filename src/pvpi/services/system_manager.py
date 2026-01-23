@@ -47,7 +47,11 @@ def main(config: PvPiConfig):
     # Setup power watchdog
     _logger.info(f"Watchdog: {'On' if config.enable_watchdog else 'Off'}")
     if config.enable_watchdog:
-        client.set_watchdog(2 * config.log_period)
+        client.set_watchdog(config.watchdog_period_mins)
+
+    client.set_wakeup_voltage(config.wake_up_voltage)
+    logging.info("Wakeup Voltage set at: %sV", config.wake_up_voltage)
+
 
     # Pv Pi Logging loop
     try:
@@ -95,8 +99,10 @@ def main(config: PvPiConfig):
         if config.schedule_time:
             client.set_alarm(config.wakeup_time)
 
-        client.stop_watchdog()
-        client.power_off(config.off_delay)  # TODO what?
+        if config.disable_watchdog_on_shutdown:
+            client.stop_watchdog()
+        if config.power_off_on_shutdown:
+            client.power_off_with_delay(config.power_off_delay)
 
         _logger.info("shutting down...")
         time.sleep(1)

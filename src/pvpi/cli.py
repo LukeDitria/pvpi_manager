@@ -12,6 +12,12 @@ from pvpi.utils import init_logging
 
 logger = logging.getLogger("pvpi")
 
+# TODO
+#  - check config works with install dir
+#  - check test cli
+#  - check every client endpoint
+#  - check systemd install
+
 
 @click.group()
 @click.option("--verbose", is_flag=True, help="Enable debug logging.")
@@ -52,6 +58,9 @@ def pvpi_connection_test():
     logger.info("Alive: %s", is_alive)
     logger.info("Current MCU time: %s", mcu_time)
     logger.info("System time: %s", datetime.now().strftime("%y-%m-%d %H:%M:%S"))
+
+    logger.info(f"Set PV PI time from system time: {client.set_mcu_time()}")
+    logger.info(f"New MCU time: {client.get_mcu_time()}")
 
     logger.info("PV PI Setting States")
     logger.info(f"PV PI Set MPPT State: {client.set_mppt_state('ON')}")

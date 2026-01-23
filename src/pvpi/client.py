@@ -97,11 +97,21 @@ class PvPiClient:
             raise ValueError("Failed to read board temperature")
 
     # ---------------------- Time Sync Commands ---------------------- #
-    def set_mcu_time(self, dt: datetime | None = None):
+    def set_mcu_time(self, dt: datetime | None = None) -> bool:
         """Set STM32 RTC"""
         dt = dt or datetime.now()
         cmd = f"SET_TIME,{dt.year % 100},{dt.month},{dt.day},{dt.hour},{dt.minute},{dt.second}"
-        resp = self._interface.write(cmd.encode())
+        resp = self._interface.write(cmd.encode()).decode()
+        type_, *values = resp.split(",")
+        # TODO explain what's recvd
+
+        cmd_state = resp.split(",")[1] if "," in resp else "FAIL"
+        if cmd_state == "OK":
+            logging.info(f"Set MCU to System time: {dt.strftime('%y-%m-%d %H:%M:%S')}")
+            return True
+        else:
+            return False
+
         logging.info(f"Set MCU to System time: {dt.strftime('%y-%m-%d %H:%M:%S')}")
         return resp  # TODO what is resp and lets just return the obj rather than log
 

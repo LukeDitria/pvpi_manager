@@ -23,9 +23,6 @@ dev = [
 
 [tool.uv]
 package = true
-#environments = [
-#    "sys_platform == 'linux'",
-#]
 
 [project.scripts]
 pvpi = "pvpi.cli:cli"
@@ -39,5 +36,6 @@ extend-select = [
     "UP",
     "TID",
     "A",
-    "SIM"
+    "SIM",
+    "LOG"
 ]

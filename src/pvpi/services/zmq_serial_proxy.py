@@ -4,7 +4,7 @@ import logging
 import zmq
 import zmq.asyncio
 
-from pvpi.transports import SerialInterface
+from pvpi import SerialInterface
 
 _logger = logging.getLogger(__name__)
 

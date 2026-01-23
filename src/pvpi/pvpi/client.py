@@ -2,7 +2,7 @@ import logging
 from datetime import datetime, time
 from enum import StrEnum
 
-from pvpi.transports import BaseTransportInterface, ZmqSerialProxyInterface, SerialInterface
+from pvpi import BaseTransportInterface, ZmqSerialProxyInterface, SerialInterface
 
 _logger = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ def _get_interface():
 
 
 class PvPiClient:
-    def __init__(self, interface: BaseTransportInterface = None):
+    def __init__(self, interface: BaseTransportInterface | None = None):
         self._interface = interface or _get_interface()
 
     def get_alive(self) -> bool:
@@ -243,11 +243,11 @@ class PvPiClient:
             logging.warning("Failed to get charge state!")
             return None
 
-    def get_charge_state(self):  # TODO
+    def get_charge_state(self):
         """Get PV PI charge state string"""
         charge_state_code = self.get_charge_state_code()
         if charge_state_code is not None:
-            return self.charge_states[charge_state_code]
+            return PvPiChargeStates[charge_state_code]  # FIXME
         else:
             return "NA"
 

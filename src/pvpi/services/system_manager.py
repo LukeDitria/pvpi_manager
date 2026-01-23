@@ -4,10 +4,10 @@ import sys
 import time
 from datetime import datetime, timedelta
 
-from pvpi.client import PvPiClient
+from pvpi import PvPiClient
 from pvpi.config import PvPiConfig
-from pvpi.csv_logger import DailyCSVLogger
-from pvpi.transports import ZmqSerialProxyInterface
+from pvpi.logging_ import RotatingCSVLogger
+from pvpi import ZmqSerialProxyInterface
 from pvpi.utils import set_system_time
 
 _logger = logging.getLogger(__name__)
@@ -31,10 +31,10 @@ def main(config: PvPiConfig):
         client.set_mcu_time()
 
     # Setup CSV logger
-    stats_data_logger: DailyCSVLogger | None = None
+    stats_data_logger: RotatingCSVLogger | None = None
     if config.log_pvpi_stats:
         _logger.info("Logging PV PI statistics")
-        stats_data_logger = DailyCSVLogger(config.data_log_path, config.keep_for_days)  # TODO
+        stats_data_logger = RotatingCSVLogger(config.data_log_path, config.keep_for_days)  # TODO
 
     # Delay start
     if config.startup_delay:
@@ -49,9 +49,8 @@ def main(config: PvPiConfig):
     if config.enable_watchdog:
         client.set_watchdog(config.watchdog_period_mins)
 
-    client.set_wakeup_voltage(config.wake_up_voltage)
-    logging.info("Wakeup Voltage set at: %sV", config.wake_up_voltage)
-
+    client.set_wakeup_voltage(config.wake_up_volt)
+    _logger.info("Wakeup Voltage set at: %sV", config.wake_up_volt)
 
     # Pv Pi Logging loop
     try:
@@ -102,7 +101,7 @@ def main(config: PvPiConfig):
         if config.disable_watchdog_on_shutdown:
             client.stop_watchdog()
         if config.power_off_on_shutdown:
-            client.power_off_with_delay(config.power_off_delay)
+            client.power_off(delay_s=config.power_off_delay)
 
         _logger.info("shutting down...")
         time.sleep(1)

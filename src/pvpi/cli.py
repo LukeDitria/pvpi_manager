@@ -5,10 +5,9 @@ from datetime import datetime
 import click
 import serial
 
-from pvpi.client import PvPiClient
+from pvpi import PvPiClient, SerialInterface
+from pvpi.logging_ import init_logging
 from pvpi.services.zmq_serial_proxy import ZmqSerialProxy
-from pvpi.transports import SerialInterface
-from pvpi.utils import init_logging
 
 logger = logging.getLogger("pvpi")
 
@@ -29,11 +28,10 @@ def cli(verbose: bool = False):
 @cli.command()
 @click.option("--user", is_flag=True, help="Install systemd services as current user")
 @click.option("--config", type=click.Path(exists=True, file_okay=True, dir_okay=False))
-def install(user: bool = False, config: str = None):
+def install(user: bool = False, config: str | None = None):
     from pvpi.systemd.install import install_systemd
 
     # TODO grab config
-
 
     install_systemd(user=user)
 
@@ -89,7 +87,7 @@ def pvpi_connection_test():
 
 @cli.command()
 @click.option("--config", type=click.Path(exists=True, file_okay=True, dir_okay=False))
-def run_uart_proxy(config: str = None):
+def run_uart_proxy(config: str | None = None):
     # TODO grab config
 
     try:
@@ -107,9 +105,10 @@ def run_uart_proxy(config: str = None):
 
     asyncio.run(proxy_server.run())
 
+
 @cli.command()
 @click.option("--config", type=click.Path(exists=True, file_okay=True, dir_okay=False))
-def run_system_logger(config: str = None):
+def run_system_logger(config: str | None = None):
     # TODO grab config
     ...
 

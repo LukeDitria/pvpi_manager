@@ -44,7 +44,7 @@ class SerialInterface(BaseTransportInterface):
             _logger.debug("Received from serial: %s", response)
             return response
         except serial.SerialException as err:
-            raise  # TODO
+            raise err  # TODO
         except Exception:
             raise
 
@@ -67,5 +67,5 @@ class ZmqSerialProxyInterface(BaseTransportInterface):
 
     def write(self, message: bytes) -> bytes:
         self.socket.send_multipart([message])
-        response = self.socket.recv_multipart()
+        response = b"".join(self.socket.recv_multipart())
         return response  # TODO error handling here?

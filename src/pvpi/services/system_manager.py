@@ -4,10 +4,10 @@ import sys
 import time
 from datetime import datetime, timedelta
 
-from pvpi import PvPiClient
+from pvpi.client import PvPiClient
 from pvpi.config import PvPiConfig
 from pvpi.logging_ import RotatingCSVLogger
-from pvpi import ZmqSerialProxyInterface
+from pvpi.transports import ZmqSerialProxyInterface
 from pvpi.utils import set_system_time
 
 _logger = logging.getLogger(__name__)

@@ -10,7 +10,7 @@ _logger = logging.getLogger(__name__)
 
 
 class BaseTransportInterface(Protocol):
-    def write(self, message: bytes) -> bytes: ...
+    def write(self, message: bytes) -> str: ...
 
     def close(self) -> None: ...
 
@@ -35,14 +35,14 @@ class SerialInterface(BaseTransportInterface):
         if self._serial and self._serial.is_open:
             self._serial.close()
 
-    def write(self, message: bytes) -> bytes:
+    def write(self, message: bytes) -> str:
         try:
             self._serial.write(message)
             _logger.debug("Written to serial: %s", message)
 
             response = self._serial.readline()
-            _logger.debug("Received from serial: %s", response)
-            return response
+            _logger.info("Received from serial: %s", response)
+            return response.decode().strip()  # remove '\r\n' from responses
         except serial.SerialException as err:
             raise err  # TODO
         except Exception:
@@ -50,7 +50,7 @@ class SerialInterface(BaseTransportInterface):
 
 
 class ZmqSerialProxyInterface(BaseTransportInterface):
-    def __init__(self, addr: str = "tcp://127.0.0.1:5555"):
+    def __init__(self, addr: str = "tcp://127.0.0.1:5555", recv_timeout_ms=500):
         self.addr = addr
 
         _logger.info("Connecting to socket at %s", addr)
@@ -58,14 +58,24 @@ class ZmqSerialProxyInterface(BaseTransportInterface):
         self.socket = self.context.socket(zmq.DEALER)
         self.client_id = f"client_{os.getpid()}".encode()
         self.socket.setsockopt(zmq.IDENTITY, self.client_id)
+        self.socket.setsockopt(zmq.LINGER, 0)
+        self.socket.setsockopt(zmq.CONNECT_TIMEOUT, 2_000)  # ms
+        self.socket.setsockopt(zmq.RCVTIMEO, recv_timeout_ms)  # ms
         self.socket.connect(self.addr)
+        _logger.info("Socket connected")
 
     def close(self):
         _logger.info("Closing socket...")
         self.socket.close()
         self.context.term()
 
-    def write(self, message: bytes) -> bytes:
+    def write(self, message: bytes) -> str:
         self.socket.send_multipart([message])
-        response = b"".join(self.socket.recv_multipart())
-        return response  # TODO error handling here?
+        _logger.debug("Written to proxy: %s", message)
+        try:
+            response = b"".join(self.socket.recv_multipart())
+            _logger.debug("Received from proxy: %s", response)
+        except zmq.Again:
+            _logger.debug("Timed out waiting for response from zmq-serial proxy")
+            raise
+        return response.decode()  # TODO check output

@@ -5,9 +5,10 @@ from datetime import datetime
 import click
 import serial
 
-from pvpi import PvPiClient, SerialInterface
+from pvpi.client import PvPiClient
 from pvpi.logging_ import init_logging
 from pvpi.services.zmq_serial_proxy import ZmqSerialProxy
+from pvpi.transports import SerialInterface
 
 logger = logging.getLogger("pvpi")
 
@@ -85,6 +86,47 @@ def pvpi_connection_test():
     logger.info("PV PI Temp: %sC", temperature)
 
 
+@cli.command(name="test2")
+def pvpi_connection_test2():
+    client = PvPiClient()
+    logger.info("Running PV PI function test!")
+    logger.info("Checking connection...")
+
+    is_alive = client.get_alive()
+    client.set_mcu_time()
+    mcu_time = client.get_mcu_time()
+    logger.info("Alive: %s", is_alive)
+    logger.info("Current MCU time: %s", mcu_time)
+    logger.info("System time: %s", datetime.now().strftime("%y-%m-%d %H:%M:%S"))
+
+    logger.info("Set PV PI time from system time: %s", client.set_mcu_time())
+    logger.info("New MCU time: %s", client.get_mcu_time())
+
+    # logger.info("PV PI Setting States")
+    # logger.info(f"PV PI Set MPPT State: {client.set_mppt_state('ON')}")
+    # logger.info(f"PV PI Set TS State: {client.set_ts_state('OFF')}")
+    # logger.info(f"PV PI Set Charge State: {client.set_charge_state('ON')}")
+    # logger.info(f"PV PI Set MAX Charge Current: {client.set_max_charge_current(10)}")
+    # logger.info(f"PV PI Set Wakeup Voltage: {client.set_wakeup_voltage(13)}")
+    #
+    # logger.info(f"PV PI Charge State code: {client.get_charge_state_code()}")
+    # logger.info(f"PV PI Charge State: {client.get_charge_state()}")
+    #
+    # logger.info(f"PV PI Fault code: {client.get_fault_code()}")
+    # logger.info(f"PV PI Fault States: {client.get_fault_states()}")
+    #
+    # logger.info("PV PI Battery and PV input #")
+    #
+    bat_v = client.get_battery_voltage()
+    bat_c = client.get_battery_current()
+    pv_v = client.get_pv_voltage()
+    pv_c = client.get_pv_current()
+    temperature = client.get_board_temp()
+    logger.info("Battery: %s V, %s A", bat_v, bat_c)
+    logger.info("PV: %s V, %s A", pv_v, pv_c)
+    logger.info("PV PI Temp: %sC", temperature)
+
+
 @cli.command()
 @click.option("--config", type=click.Path(exists=True, file_okay=True, dir_okay=False))
 def run_uart_proxy(config: str | None = None):
@@ -93,13 +135,13 @@ def run_uart_proxy(config: str | None = None):
     try:
         serial_interface = SerialInterface()
     except (serial.SerialException, Exception):
-        logging.error("Failed to open serial port")
+        logger.error("Failed to open serial port")
         raise
 
     try:
         proxy_server = ZmqSerialProxy(serial_interface=serial_interface)
     except Exception:
-        logging.error("Failed to ...")  # TODO
+        logger.error("Failed to ...")  # TODO
         serial_interface.close()
         raise
 

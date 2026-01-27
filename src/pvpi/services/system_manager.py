@@ -13,7 +13,7 @@ from pvpi.utils import set_system_time
 _logger = logging.getLogger(__name__)
 
 
-def main(config: PvPiConfig):
+def run(config: PvPiConfig):
     serial_interface = ZmqSerialProxyInterface()
     # TODO error handling
 
@@ -42,10 +42,10 @@ def main(config: PvPiConfig):
         time.sleep(config.startup_delay)
 
     _logger.info("Log period: %i minutes", config.log_period)
-    _logger.info(f"Time Schedule: {'On' if config.schedule_time else 'Off'}")
+    _logger.info("Time Schedule: %s", "On" if config.schedule_time else "Off")
 
     # Setup power watchdog
-    _logger.info(f"Watchdog: {'On' if config.enable_watchdog else 'Off'}")
+    _logger.info("Watchdog: %s", "On" if config.enable_watchdog else "Off")
     if config.enable_watchdog:
         client.set_watchdog(config.watchdog_period_mins)
 

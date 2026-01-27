@@ -11,11 +11,9 @@ _logger = logging.getLogger(__name__)
 
 class BaseTransportInterface(Protocol):
     def write(self, message: bytes) -> str: ...
-
     def close(self) -> None: ...
 
 
-# TODO keyboard interrupt
 # TODO service stop
 # TODO serial not found or similar
 
@@ -41,10 +39,10 @@ class SerialInterface(BaseTransportInterface):
             _logger.debug("Written to serial: %s", message)
 
             response = self._serial.readline()
-            _logger.info("Received from serial: %s", response)
+            _logger.debug("Received from serial: %s", response)
             return response.decode().strip()  # remove '\r\n' from responses
         except serial.SerialException as err:
-            raise err  # TODO
+            raise err
         except Exception:
             raise
 

@@ -159,15 +159,19 @@ class PvPiClient:
     # ---------------------- Power Commands ---------------------- #
     def power_off(self, delay_s: int = 30):
         """Schedule power-off after delay (seconds)"""
+        if delay_s < 1 or delay_s > 60:
+            raise ValueError("Power off delay must be between 1-60 secs")
         cmd = f"POWER_OFF,{delay_s}".encode()
         resp = self._interface.write(cmd)
         _, success = resp.split(",")
         if success != "OK":
             raise ValueError("Failed to set MCU time")
 
-    def set_watchdog(self, watchdog_period):  # TODO unit
+    def set_watchdog(self, watchdog_period_min: int):
         """Set the power watchdog"""
-        cmd = f"WATCHDOG_ON,{watchdog_period}".encode()
+        if watchdog_period_min < 1 or watchdog_period_min > 60:
+            raise ValueError("Power watchdog period must be 1-60 mins")
+        cmd = f"WATCHDOG_ON,{watchdog_period_min}".encode()
         resp = self._interface.write(cmd)
         _, success = resp.split(",")
         if success != "OK":
@@ -192,7 +196,7 @@ class PvPiClient:
             raise ValueError("Failed to set wakeup voltage")
 
     def set_max_charge_current(self, current: float):
-        """Set the maximum battery charge current for the the PV PI"""
+        """Set the maximum battery charge current for the PV PI"""
         if current < 0.4 or current > 10:
             raise ValueError(f"Current value {current} is invalid! Must be >0.4 and <10")
         milliamps = current * 1000
@@ -220,7 +224,7 @@ class PvPiClient:
         """Get PV PI fault code"""
         resp = self._interface.write(b"GET_FAULT_CODE")
         type_, value = resp.split(",")
-        if type_ != "CHARGE_STATE":
+        if type_ != "FAULT_CODE":
             raise ValueError("Failed to read Pv Pi fault state")
         return PvPiFaultState(int(value))
 
@@ -231,9 +235,9 @@ class PvPiClient:
 
     # ---------------------- Set Behaviour Commands ---------------------- #
     def set_mppt_state(self, state: Literal["ON", "OFF"]):
-        """Enable/Disable the mppt"""  # TODO what?
+        """Enable/Disable the Maximum Power Point Tracking"""
         state = state.upper()
-        if state not in ["ON", "OFF"]:
+        if state not in ("ON", "OFF"):
             raise ValueError("State can only be set to 'ON' or 'OFF'")
         cmd = f"SET_MPPT_STATE,{state}".encode()
         resp = self._interface.write(cmd)
@@ -242,9 +246,9 @@ class PvPiClient:
             raise ValueError("Failed to set MPPT")
 
     def set_ts_state(self, state: Literal["ON", "OFF"]):
-        """Enable/Disable the ts"""  # TODO what?
+        """Enable/Disable the BQ25756 Battery Temperature monitoring"""
         state = state.upper()
-        if state not in ["ON", "OFF"]:
+        if state not in ("ON", "OFF"):
             raise ValueError("State can only be set to 'ON' or 'OFF'")
         cmd = f"SET_TS_STATE,{state}".encode()
         resp = self._interface.write(cmd)
@@ -255,7 +259,7 @@ class PvPiClient:
     def set_charge_state(self, state: Literal["ON", "OFF"]):
         """Enable/Disable the PV PI charging"""
         state = state.upper()
-        if state not in ["ON", "OFF"]:
+        if state not in ("ON", "OFF"):
             raise ValueError("State can only be set to 'ON' or 'OFF'")
         cmd = f"SET_TS_STATE,{state}".encode()
         resp = self._interface.write(cmd)

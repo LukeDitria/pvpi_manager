@@ -1,3 +1,5 @@
+import json
+import pathlib
 from datetime import time
 from pathlib import Path
 
@@ -41,3 +43,14 @@ class PvPiConfig(BaseSettings, extra="forbid"):
     # Clocks
     time_pi2mcu: bool = Field(False, description="Set Pv Pi's MCU clock to match Raspberry Pi's clock on boot")
     time_mcu2pi: bool = Field(False, description="Set Raspberry Pi's clock to match Pv Pi's MCU clock on boot")
+
+    @classmethod
+    def from_file(cls, path: str | None = None):
+        if path is None:
+            return cls()
+        ext = pathlib.Path(path).suffix
+        if ext == ".json":
+            with open(path) as f:
+                return cls.model_validate(json.load(f))
+        raise ValueError(f"unsupported file type '{ext}'")
+

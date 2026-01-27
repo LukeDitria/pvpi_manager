@@ -10,7 +10,7 @@ Environment=UV_CACHE_DIR=/var/cache/pvpi/uv
 Environment=UV_PYTHON_INSTALL_DIR=/var/lib/pvpi/uv-python
 
 ExecStartPre=/usr/local/bin/uv sync --frozen --no-dev
-ExecStart=/srv/pvpi/.venv/bin/python -m pvpi uart
+ExecStart=/srv/pvpi/.venv/bin/python -m pvpi uart-proxy
 Restart=always
 RestartSec=10
 

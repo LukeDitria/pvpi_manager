@@ -53,4 +53,3 @@ class PvPiConfig(BaseSettings, extra="forbid"):
             with open(path) as f:
                 return cls.model_validate(json.load(f))
         raise ValueError(f"unsupported file type '{ext}'")
-

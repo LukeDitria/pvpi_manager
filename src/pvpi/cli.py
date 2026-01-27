@@ -1,15 +1,15 @@
 import asyncio
 import logging
 from datetime import datetime
-from textwrap import shorten
 
 import click
-import serial
 
 from pvpi.client import PvPiClient
 from pvpi.config import PvPiConfig
 from pvpi.logging_ import init_logging
+from pvpi.services import system_manager
 from pvpi.services.zmq_serial_proxy import ZmqSerialProxy
+from pvpi.systemd.install import install_systemd
 from pvpi.transports import SerialInterface
 
 logger = logging.getLogger("pvpi")
@@ -17,7 +17,6 @@ logger = logging.getLogger("pvpi")
 # TODO
 #  - check config works with install dir
 #  - check test cli
-#  - check every client endpoint
 #  - check systemd install
 
 
@@ -26,6 +25,7 @@ logger = logging.getLogger("pvpi")
 def cli(verbose: bool = False):
     level = logging.DEBUG if verbose else logging.INFO
     init_logging(logger=logger, level=level)
+
 
 @cli.command(short_help="Set Pv Pi MCU clock to match current device clock")
 def set_mcu_clock():
@@ -83,22 +83,8 @@ def connection_test():
 @click.option("--config", type=click.Path(exists=True, file_okay=True, dir_okay=False))
 def uart_proxy(config: str | None = None):
     _config = PvPiConfig.from_file(path=config)
-
-    # TODO grab config
-
-    try:
-        serial_interface = SerialInterface()
-    except (serial.SerialException, Exception):
-        logger.error("Failed to open serial port")
-        raise
-
-    try:
-        proxy_server = ZmqSerialProxy(serial_interface=serial_interface)
-    except Exception:
-        logger.error("Failed to ...")  # TODO
-        serial_interface.close()
-        raise
-
+    serial_interface = SerialInterface(port=_config.uart_port)
+    proxy_server = ZmqSerialProxy(serial_interface=serial_interface)
     asyncio.run(proxy_server.run())
 
 
@@ -106,21 +92,17 @@ def uart_proxy(config: str | None = None):
 @click.option("--config", type=click.Path(exists=True, file_okay=True, dir_okay=False))
 def manager(config: str | None = None):
     _config = PvPiConfig.from_file(path=config)
-
-    ...
-
+    system_manager.run(config=config)
 
 
 @cli.command(short_help="Install Pv Pi logger & UART proxy as systemd services")
 @click.option("--user", is_flag=True, help="Install systemd services as current user rather than root")
 @click.option("--config", type=click.Path(exists=True, file_okay=True, dir_okay=False))
 def install(user: bool = False, config: str | None = None):
-    from pvpi.systemd.install import install_systemd
     _config = PvPiConfig.from_file(path=config)
 
-    # TODO grab config
+    install_systemd(user=user)  # TODO test
 
-    install_systemd(user=user)
 
 if __name__ == "__main__":
     cli()

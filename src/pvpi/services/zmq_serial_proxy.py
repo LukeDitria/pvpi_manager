@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from email import message_from_string
 
 import zmq
 import zmq.asyncio
@@ -19,29 +20,35 @@ class ZmqSerialProxy:
         self.context = zmq.asyncio.Context()
         self.socket = self.context.socket(zmq.ROUTER)
         self.socket.setsockopt(zmq.RCVTIMEO, timeout_ms)
-        self.socket.bind(self.bind_addr)
-        _logger.info("Listening on %s", self.bind_addr)
 
     async def run(self):
-        _logger.info("Running UART proxy at %s", self.bind_addr)
+        self.socket.bind(self.bind_addr)
+        _logger.info("Running UART proxy & listening at %s", self.bind_addr)
         self._stay_alive.set()
         try:
             while self._stay_alive:
-                client_id, *payload = await self.socket.recv_multipart()
+                try:
+                    client_id, *payload = await self.socket.recv_multipart()
+                except zmq.Again:
+                    await asyncio.sleep(0.1)
+                    continue
                 message: bytes = b"".join(payload)
+                _logger.debug("Received request from %s: %s", client_id, message)
+
+                # Proxy heartbeat request
+                if message == b"":
+                    _logger.debug("Sending heartbeat response to %s", client_id)
+                    await self.socket.send_multipart([client_id])
+                    continue
 
                 try:
                     response = self.serial_interface.write(message=message)
                 except Exception:
                     _logger.warning("Failed to serve client %s", client_id)
-                    await self.socket.send_multipart([client_id, b"ERROR: UART timeout"])
+                    await self.socket.send_multipart([client_id, b"ERROR"])
                 else:
-                    await self.socket.send([client_id, response])
-        except asyncio.CancelledError:
-            pass
-        except Exception:
-            _logger.exception("Unhandled exception")
-            raise
+                    _logger.debug("Sending response to %s: %s", client_id, response)
+                    await self.socket.send_multipart([client_id, response.encode()])
         finally:
             _logger.info("Closing socket...")
             self.socket.close()

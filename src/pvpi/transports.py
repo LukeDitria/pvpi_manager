@@ -48,13 +48,13 @@ class SerialInterface(BaseTransportInterface):
 
 
 class ZmqSerialProxyInterface(BaseTransportInterface):
-    def __init__(self, addr: str = "tcp://127.0.0.1:5555", recv_timeout_ms=500):
+    def __init__(self, addr: str = "tcp://127.0.0.1:5555", recv_timeout_ms=10_000):
         self.addr = addr
 
         _logger.info("Connecting to socket at %s", addr)
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.DEALER)
-        self.client_id = f"client_{os.getpid()}".encode()
+        self.client_id = f"client_pid#{os.getpid()}".encode()
         self.socket.setsockopt(zmq.IDENTITY, self.client_id)
         self.socket.setsockopt(zmq.LINGER, 0)
         self.socket.setsockopt(zmq.CONNECT_TIMEOUT, 2_000)  # ms
@@ -67,6 +67,12 @@ class ZmqSerialProxyInterface(BaseTransportInterface):
         self.socket.close()
         self.context.term()
 
+    def send_heartbeat(self) -> bool:
+        try:
+            return self.write(b"") == b""
+        except Exception:
+            return False
+
     def write(self, message: bytes) -> str:
         self.socket.send_multipart([message])
         _logger.debug("Written to proxy: %s", message)
@@ -76,4 +82,4 @@ class ZmqSerialProxyInterface(BaseTransportInterface):
         except zmq.Again:
             _logger.debug("Timed out waiting for response from zmq-serial proxy")
             raise
-        return response.decode()  # TODO check output
+        return response.decode()

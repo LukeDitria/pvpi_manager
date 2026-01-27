@@ -63,10 +63,10 @@ def _get_interface():
     try:
         interface = ZmqSerialProxyInterface()
         PvPiClient(interface=interface).get_alive()
-        _logger.info("Default to ZmqSerialProxyInterface")
+        _logger.info("Defaulted to ZmqSerialProxyInterface")
         return interface
     except Exception:
-        _logger.info("Default to SerialInterface")
+        _logger.info("Defaulted to SerialInterface")
         pass
     return SerialInterface()
 

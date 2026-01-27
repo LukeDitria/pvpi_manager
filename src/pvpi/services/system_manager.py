@@ -15,8 +15,8 @@ _logger = logging.getLogger(__name__)
 
 def run(config: PvPiConfig):
     serial_interface = ZmqSerialProxyInterface()
-    # TODO error handling
-
+    if not serial_interface.send_heartbeat():
+        raise ValueError("ZmqSerialProxyInterface failed heartbeat")
     client = PvPiClient(interface=serial_interface)
 
     # Check Pv Pi status

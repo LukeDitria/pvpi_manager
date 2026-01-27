@@ -62,6 +62,9 @@ class ZmqSerialProxyInterface(BaseTransportInterface):
         self.socket.connect(self.addr)
         _logger.info("Socket connected")
 
+        if not self.send_heartbeat():
+            raise ValueError("ZmqSerialProxyInterface failed heartbeat")
+
     def close(self):
         _logger.info("Closing socket...")
         self.socket.close()

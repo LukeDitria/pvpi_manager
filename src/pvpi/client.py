@@ -62,7 +62,6 @@ PvPiFaultStateDescriptions = {
 def _get_interface():
     try:
         interface = ZmqSerialProxyInterface()
-        PvPiClient(interface=interface).get_alive()
         _logger.info("Defaulted to ZmqSerialProxyInterface")
         return interface
     except Exception:

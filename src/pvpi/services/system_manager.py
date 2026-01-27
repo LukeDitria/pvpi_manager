@@ -15,8 +15,6 @@ _logger = logging.getLogger(__name__)
 
 def run(config: PvPiConfig):
     serial_interface = ZmqSerialProxyInterface()
-    if not serial_interface.send_heartbeat():
-        raise ValueError("ZmqSerialProxyInterface failed heartbeat")
     client = PvPiClient(interface=serial_interface)
 
     # Check Pv Pi status
@@ -48,20 +46,21 @@ def run(config: PvPiConfig):
     _logger.info("Watchdog: %s", "On" if config.enable_watchdog else "Off")
     if config.enable_watchdog:
         client.set_watchdog(config.watchdog_period_mins)
+        _logger.info("Watchdog polling interval set to %s min", config.watchdog_period_mins)
 
     client.set_wakeup_voltage(config.wake_up_volt)
     _logger.info("Wakeup Voltage set at: %sV", config.wake_up_volt)
 
     # Pv Pi Logging loop
+    log_period_sec = config.log_period * 60
+    prev_time = datetime.now() - timedelta(hours=1)  # TODO set based on log-period
     try:
-        prev_time = datetime.now() - timedelta(hours=1)  # TODO set based on log-period
         while True:
             curr_time = datetime.now()
-            if curr_time.time() >= config.shutdown_time and config.schedule_time:
+            if config.schedule_time and curr_time.time() >= config.shutdown_time:
                 _logger.info("Shutdown Time!")
                 break
 
-            log_period_sec = config.log_period * 60
             sec_since_last_log = (curr_time - prev_time).seconds
             if sec_since_last_log >= log_period_sec:
                 prev_time = datetime.now()
@@ -80,7 +79,6 @@ def run(config: PvPiConfig):
                 _logger.info("Battery: %s V, %s A", bat_v, bat_c)
                 _logger.info("PV: %s V, %s A", pv_v, pv_c)
                 _logger.info("PV PI Temp: %sC", temperature)
-
                 if stats_data_logger:
                     stats_data_logger.log_stats(bat_v, bat_c, pv_v, pv_c, temperature)
 
@@ -93,19 +91,22 @@ def run(config: PvPiConfig):
         _logger.warning("Exception raised %s", err)
         client.stop_watchdog()
         serial_interface.close()
-        sys.exit(-1)
+        raise
     else:
+        _logger.info("Closing down...")
         if config.schedule_time:
             client.set_alarm(config.wakeup_time)
-
+            _logger.info("Alarm set %s", config.wakeup_time)
         if config.disable_watchdog_on_shutdown:
             client.stop_watchdog()
+            _logger.info("Watchdog stopped")
         if config.power_off_on_shutdown:
             client.power_off(delay_s=config.power_off_delay)
+            _logger.info("Powering off Pv Pi")
 
-        _logger.info("shutting down...")
+        _logger.info("Shutting down...")
         time.sleep(1)
-        os.system("sudo shutdown now")  # TODO
+        os.system("sudo shutdown now")  # warning: requires permissions
         while True:
             _logger.info("sleeping, waiting for shutdown...")
             time.sleep(100)

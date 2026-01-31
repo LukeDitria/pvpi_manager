@@ -29,7 +29,7 @@ class PvPiConfig(BaseSettings, extra="forbid"):
     wakeup_time: time = time(8, 0)  # TODO
 
     # Enable CSV logging of voltages, currents, and temperatures
-    log_pvpi_stats: bool = Field(False, description="Enable CSV logging of Pv Pi metrics")
+    log_pvpi_stats: bool = Field(True, description="Enable CSV logging of Pv Pi metrics")
     data_log_path: Path = Field(
         default_factory=lambda: Path(user_data_dir("pvpi")), description="Pv Pi CSV log file path"
     )

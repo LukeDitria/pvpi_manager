@@ -1,7 +1,5 @@
 import asyncio
 import logging
-import os
-import sys
 from datetime import datetime
 
 import click
@@ -11,15 +9,10 @@ from pvpi.config import PvPiConfig
 from pvpi.logging_ import init_logging
 from pvpi.services import system_manager
 from pvpi.services.zmq_serial_proxy import ZmqSerialProxy
-from pvpi.systemd.install import install_systemd
+from pvpi.systemd.install import install_systemd, uninstall_systemd
 from pvpi.transports import SerialInterface
 
 logger = logging.getLogger("pvpi")
-
-# TODO
-#  - check config works with install dir
-#  - check test cli
-#  - check systemd install
 
 
 @click.group()
@@ -98,16 +91,15 @@ def manager(config: str | None = None):
 
 
 @cli.command(short_help="Install Pv Pi logger & UART proxy as systemd services")
-@click.option("--user", is_flag=True, help="Install systemd services as current user rather than root")
 @click.option("--config", type=click.Path(exists=True, file_okay=True, dir_okay=False))
-def install(user: bool = False, config: str | None = None):
-    if not user and os.geteuid() != 0:
-        logger.warning("sudo required")
-        os.execvp("sudo", ["sudo", sys.executable] + sys.argv)
-        return
+def install(config: str | None = None):
+    _config = PvPiConfig.from_file(path=config)  # TODO use config
+    install_systemd()
 
-    _config = PvPiConfig.from_file(path=config)
-    install_systemd(user=user)  # TODO test
+
+@cli.command(short_help="Uninstall Pv Pi logger & UART proxy as systemd services")
+def uninstall():
+    uninstall_systemd()
 
 
 if __name__ == "__main__":

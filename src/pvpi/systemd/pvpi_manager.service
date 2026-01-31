@@ -1,17 +1,15 @@
 [Unit]
 Description=PV PI Manager Service
-After=multi-user.target uart_server.service
-Requires=uart_server.service
+After=pvpi_uart.service
+Requires=pvpi_uart.service
 
 [Service]
 Type=simple
-WorkingDirectory=/srv/pvpi
-Environment=HOME=/var/lib/pvpi
-Environment=UV_CACHE_DIR=/var/cache/pvpi/uv
-Environment=UV_PYTHON_INSTALL_DIR=/var/lib/pvpi/uv-python
-
-ExecStartPre=/usr/local/bin/uv sync --frozen --no-dev
-ExecStart=/srv/pvpi/.venv/bin/python -m pvpi manager
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/pvpi_manager
+ExecStartPre=/home/pi/.local/bin/uv sync --frozen --no-dev
+ExecStart=/home/pi/.local/bin/uv run pvpi manager
 Restart=always
 RestartSec=10
 

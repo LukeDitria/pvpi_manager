@@ -1,20 +1,19 @@
 [Unit]
 Description=UART server for communication with the PV PI
-After=multi-user.target
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
-WorkingDirectory=/srv/pvpi
-Environment=HOME=/var/lib/pvpi
-Environment=UV_CACHE_DIR=/var/cache/pvpi/uv
-Environment=UV_PYTHON_INSTALL_DIR=/var/lib/pvpi/uv-python
-
-ExecStartPre=/usr/local/bin/uv sync --frozen --no-dev
-ExecStart=/srv/pvpi/.venv/bin/python -m pvpi uart-proxy
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/pvpi_manager
+ExecStartPre=/home/pi/.local/bin/uv sync --frozen --no-dev
+ExecStart=/home/pi/.local/bin/uv run pvpi uart-proxy
 Restart=always
 RestartSec=10
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target
 
 

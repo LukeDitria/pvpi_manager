@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from email import message_from_string
 
 import zmq
 import zmq.asyncio
@@ -38,7 +37,7 @@ class ZmqSerialProxy:
                 # Proxy heartbeat request
                 if message == b"":
                     _logger.debug("Sending heartbeat response to %s", client_id)
-                    await self.socket.send_multipart([client_id])
+                    await self.socket.send_multipart([client_id, b""])
                     continue
 
                 try:

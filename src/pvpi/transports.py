@@ -72,8 +72,10 @@ class ZmqSerialProxyInterface(BaseTransportInterface):
 
     def send_heartbeat(self) -> bool:
         try:
-            return self.write(b"") == b""
+            _logger.info("Sending heartbeat")
+            return self.write(b"") == ""
         except Exception:
+            _logger.debug("Heartbeat failed to respond")
             return False
 
     def write(self, message: bytes) -> str:

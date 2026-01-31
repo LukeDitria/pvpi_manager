@@ -1,5 +1,7 @@
 import asyncio
 import logging
+import os
+import sys
 from datetime import datetime
 
 import click
@@ -92,15 +94,19 @@ def uart_proxy(config: str | None = None):
 @click.option("--config", type=click.Path(exists=True, file_okay=True, dir_okay=False))
 def manager(config: str | None = None):
     _config = PvPiConfig.from_file(path=config)
-    system_manager.run(config=config)
+    system_manager.run(config=_config)
 
 
 @cli.command(short_help="Install Pv Pi logger & UART proxy as systemd services")
 @click.option("--user", is_flag=True, help="Install systemd services as current user rather than root")
 @click.option("--config", type=click.Path(exists=True, file_okay=True, dir_okay=False))
 def install(user: bool = False, config: str | None = None):
-    _config = PvPiConfig.from_file(path=config)
+    if not user and os.geteuid() != 0:
+        logger.warning("sudo required")
+        os.execvp("sudo", ["sudo", sys.executable] + sys.argv)
+        return
 
+    _config = PvPiConfig.from_file(path=config)
     install_systemd(user=user)  # TODO test
 
 

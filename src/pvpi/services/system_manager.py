@@ -1,6 +1,5 @@
 import logging
 import os
-import sys
 import time
 from datetime import datetime, timedelta
 
@@ -31,8 +30,8 @@ def run(config: PvPiConfig):
     # Setup CSV logger
     stats_data_logger: RotatingCSVLogger | None = None
     if config.log_pvpi_stats:
-        _logger.info("Logging PV PI statistics")
-        stats_data_logger = RotatingCSVLogger(config.data_log_path, config.keep_for_days)  # TODO
+        _logger.info("Logging PV PI statistics to %s", config.data_log_path)
+        stats_data_logger = RotatingCSVLogger(config.data_log_path, config.keep_for_days)
 
     # Delay start
     if config.startup_delay:
@@ -53,7 +52,7 @@ def run(config: PvPiConfig):
 
     # Pv Pi Logging loop
     log_period_sec = config.log_period * 60
-    prev_time = datetime.now() - timedelta(hours=1)  # TODO set based on log-period
+    prev_time = datetime.now() - timedelta(seconds=log_period_sec)
     try:
         while True:
             curr_time = datetime.now()

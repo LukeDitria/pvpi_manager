@@ -9,9 +9,11 @@ from pydantic_settings import (
     BaseSettings,
 )
 
+from pvpi.utils import default_uart_port
+
 
 class PvPiConfig(BaseSettings, extra="forbid"):
-    uart_port: str = Field("/dev/ttyAMA0", description="UART port path")
+    uart_port: str = Field(default_factory=default_uart_port, description="UART port path")
 
     log_period: int = Field(5, description="Pv Pi system metrics logging interval minutes", gt=0)  # mins
     startup_delay: int = Field(20, description="Seconds delay after service start before proceeding", ge=0)  # secs

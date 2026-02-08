@@ -6,6 +6,8 @@ import serial
 import zmq
 import zmq.asyncio
 
+from pvpi.utils import default_uart_port
+
 _logger = logging.getLogger(__name__)
 
 
@@ -19,7 +21,8 @@ class BaseTransportInterface(Protocol):
 
 
 class SerialInterface(BaseTransportInterface):
-    def __init__(self, port: str = "/dev/ttyAMA0", baud_rate: int = 115_200, timeout_sec: float = 5):
+    def __init__(self, port: str | None = None, baud_rate: int = 115_200, timeout_sec: float = 5):
+        port = port or default_uart_port()
         self.port = port
         self.baud_rate = baud_rate
         self.timeout_sec = timeout_sec

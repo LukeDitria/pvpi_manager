@@ -22,9 +22,11 @@ The PV PI communicates over the UART port. By default, the Raspberry Pi does not
 5. Select "Yes" to "Would you like the serial port hardware to be enabled."
 6. Exit setup & reboot device.
 
-For the Raspberry Pi and other SBC using the 40pin header the PV PI will use the UART port on pins GPIO 14/15. By default the PV PI manager tries to use `/dev/ttyAMA0`, you can change this **AFTER** setup by modifying the generated `config.json` file (discussed later).  
-For the Raspberry Pi this is usually `/dev/ttyAMA0`   
-For the Raspberry Pi ZERO this is usually `/dev/ttyS0`  
+For the Raspberry Pi and other SBC using the 40pin header the PV PI will use the UART port on pins GPIO 14/15. The PV PI manager auto-detects the board model and selects the correct default port:
+- Raspberry Pi (standard models): `/dev/ttyAMA0`
+- Raspberry Pi Zero variants: `/dev/ttyS0`
+
+You can override the port by setting `uart_port` in the `config.json` file.
 
 ## Installation
 

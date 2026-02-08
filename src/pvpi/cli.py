@@ -9,7 +9,7 @@ from pvpi.config import PvPiConfig
 from pvpi.logging_ import init_logging
 from pvpi.services import system_manager
 from pvpi.services.zmq_serial_proxy import ZmqSerialProxy
-from pvpi.systemd.install import install_systemd, uninstall_systemd
+from pvpi.systemd import install_systemd, uninstall_systemd
 from pvpi.transports import SerialInterface
 
 logger = logging.getLogger("pvpi")

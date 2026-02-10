@@ -164,7 +164,7 @@ class PvPiClient:
         resp = self._interface.write(cmd)
         _, success = resp.split(",")
         if success != "OK":
-            raise ValueError("Failed to set MCU time")
+            raise ValueError("Failed to power off")
 
     def set_watchdog(self, watchdog_period_min: int):
         """Set the power watchdog"""

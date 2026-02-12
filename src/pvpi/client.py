@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, time
-from enum import IntEnum, StrEnum, IntFlag
-from typing import Literal, List
+from enum import IntEnum, IntFlag, StrEnum
+from typing import Literal
 
 from pvpi.transports import BaseTransportInterface, SerialInterface, ZmqSerialProxyInterface
 
@@ -37,14 +37,14 @@ PvPiChargeStateDescriptions = {
 
 
 class PvPiFaultState(IntFlag):
-    NA                  = 0
-    DrvSupPinVoltage    = 1 << 0
-    ChargeSafetyTimer   = 1 << 1
-    ThermalShutdown     = 1 << 2
-    BatteryOverVoltage  = 1 << 3
-    BatteryOverCurrent  = 1 << 4
-    InputOverVoltage    = 1 << 5
-    InputUnderVoltage   = 1 << 6
+    NA = 0
+    DrvSupPinVoltage = 1 << 0
+    ChargeSafetyTimer = 1 << 1
+    ThermalShutdown = 1 << 2
+    BatteryOverVoltage = 1 << 3
+    BatteryOverCurrent = 1 << 4
+    InputOverVoltage = 1 << 5
+    InputUnderVoltage = 1 << 6
 
 
 PvPiFaultStateDescriptions = {
@@ -192,7 +192,7 @@ class PvPiClient:
         resp = self._interface.write(cmd)
         _, success = resp.split(",")
         if success != "OK":
-            raise ValueError(f"Failed to set wakeup voltage, {success}")
+            raise ValueError("Failed to set wakeup voltage")
 
     def set_max_charge_current(self, current: float):
         """Set the maximum battery charge current for the PV PI"""
@@ -227,7 +227,7 @@ class PvPiClient:
 
         return PvPiFaultState(int(value))
 
-    def get_fault_states(self) -> List[str]:
+    def get_fault_states(self) -> list[str]:
         """Get PV PI fault states description"""
         fault_codes = self.get_fault_code()
 

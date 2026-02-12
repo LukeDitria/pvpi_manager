@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from datetime import datetime
+from pathlib import Path
 
 import click
 
@@ -93,8 +94,8 @@ def manager(config: str | None = None):
 @cli.command(short_help="Install Pv Pi logger & UART proxy as systemd services")
 @click.option("--config", type=click.Path(exists=True, file_okay=True, dir_okay=False))
 def install(config: str | None = None):
-    _config = PvPiConfig.from_file(path=config)  # TODO use config
-    install_systemd()
+    config_path = Path(config).resolve() if config else None
+    install_systemd(config_path=config_path)
 
 
 @cli.command(short_help="Uninstall Pv Pi logger & UART proxy as systemd services")

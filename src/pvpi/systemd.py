@@ -109,24 +109,25 @@ def _check_run_requirements():
         os.execvp("sudo", ["sudo", sys.executable] + sys.argv)
 
 
-def install_systemd() -> None:
+def install_systemd(config_path: Path | None = None) -> None:
     _check_run_requirements()
 
     user = _get_username()
     project_dir = _get_project_dir()
+    config_flag = f" --config {config_path}" if config_path else ""
 
     if project_dir:
         uv = _get_uv()
         _logger.info("Detected cloned repo at %s — using uv run", project_dir)
 
         def make_exec_start(subcmd: str) -> str:
-            return f"{uv} run --project {project_dir} pvpi {subcmd}"
+            return f"{uv} run --project {project_dir} pvpi {subcmd}{config_flag}"
     else:
         pvpi = _get_pvpi()
         _logger.info("Installed package detected — using %s", pvpi)
 
         def make_exec_start(subcmd: str) -> str:
-            return f"{pvpi} {subcmd}"
+            return f"{pvpi} {subcmd}{config_flag}"
 
     _logger.info("Installing systemd services for user '%s'", user)
     target_dir = Path("/etc/systemd/system")

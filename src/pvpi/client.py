@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, time
-from enum import IntEnum, StrEnum
-from typing import Literal
+from enum import IntEnum, StrEnum, IntFlag
+from typing import Literal, List
 
 from pvpi.transports import BaseTransportInterface, SerialInterface, ZmqSerialProxyInterface
 
@@ -36,15 +36,15 @@ PvPiChargeStateDescriptions = {
 }
 
 
-class PvPiFaultState(IntEnum):
-    NA = 0
-    DrvSupPinVoltage = 1
-    ChargeSafetyTimer = 2
-    ThermalShutdown = 3
-    BatteryOverVoltage = 4
-    BatteryOverCurrent = 5
-    InputOverVoltage = 6
-    InputUnderVoltage = 7
+class PvPiFaultState(IntFlag):
+    NA                  = 0
+    DrvSupPinVoltage    = 1 << 0
+    ChargeSafetyTimer   = 1 << 1
+    ThermalShutdown     = 1 << 2
+    BatteryOverVoltage  = 1 << 3
+    BatteryOverCurrent  = 1 << 4
+    InputOverVoltage    = 1 << 5
+    InputUnderVoltage   = 1 << 6
 
 
 PvPiFaultStateDescriptions = {
@@ -188,18 +188,18 @@ class PvPiClient:
         if voltage < 11.5 or voltage > 14.4:
             raise ValueError(f"Voltage value {voltage} is invalid! Must be >11.5 and <14.4")
         millivolts = voltage * 1000
-        cmd = f"SET_WAKEUP_MILIVOLT,{millivolts}".encode()
+        cmd = f"SET_WAKEUP_MILLIVOLT,{millivolts}".encode()
         resp = self._interface.write(cmd)
         _, success = resp.split(",")
         if success != "OK":
-            raise ValueError("Failed to set wakeup voltage")
+            raise ValueError(f"Failed to set wakeup voltage, {success}")
 
     def set_max_charge_current(self, current: float):
         """Set the maximum battery charge current for the PV PI"""
         if current < 0.4 or current > 10:
             raise ValueError(f"Current value {current} is invalid! Must be >0.4 and <10")
         milliamps = current * 1000
-        cmd = f"SET_CHARGE_MILIAMPS,{milliamps}".encode()
+        cmd = f"SET_CHARGE_MILLIAMPS,{milliamps}".encode()
         resp = self._interface.write(cmd)
         _, success = resp.split(",")
         if success != "OK":
@@ -220,17 +220,18 @@ class PvPiClient:
         return PvPiChargeStateDescriptions[charge_state_code]
 
     def get_fault_code(self) -> PvPiFaultState:
-        """Get PV PI fault code"""
         resp = self._interface.write(b"GET_FAULT_CODE")
         type_, value = resp.split(",")
         if type_ != "FAULT_CODE":
             raise ValueError("Failed to read Pv Pi fault state")
+
         return PvPiFaultState(int(value))
 
-    def get_fault_states(self) -> str:
+    def get_fault_states(self) -> List[str]:
         """Get PV PI fault states description"""
-        fault_code = self.get_fault_code()
-        return PvPiFaultStateDescriptions[fault_code]
+        fault_codes = self.get_fault_code()
+
+        return [PvPiFaultStateDescriptions[f] for f in PvPiFaultState if f in fault_codes]
 
     # ---------------------- Set Behaviour Commands ---------------------- #
     def set_mppt_state(self, state: Literal["ON", "OFF"]):
@@ -260,7 +261,7 @@ class PvPiClient:
         state = state.upper()
         if state not in ("ON", "OFF"):
             raise ValueError("State can only be set to 'ON' or 'OFF'")
-        cmd = f"SET_TS_STATE,{state}".encode()
+        cmd = f"SET_CHARGE_STATE,{state}".encode()
         resp = self._interface.write(cmd)
         _, success = resp.split(",")
         if success != "OK":

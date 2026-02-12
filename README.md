@@ -64,12 +64,12 @@ print(client.get_alive())
 Check out the [client.py](src/pvpi/client.py) for more details.
 
 ## Set Pv Pi STM32 RTC clock time
-The Pv Pi's RTC can be receive a "set time" command using the SDK. You'll only need to do this once if you have a RTC backup battery connected to the Pv Pi. If you don't have a RTC backup battery then the RTC will loose time whenever the main battery power is disconnected.  
+The Pv Pi's RTC can receive a "set clock" command using the SDK. You'll only need to do this once if you have a RTC backup battery connected to the Pv Pi. If you don't have a RTC backup battery then the RTC will loose time whenever the main battery power is disconnected.  
 
 The following command will set the Pv Pi clock to match the system time of the machine calling the command (give or take a second or so).
 
 ```shell
-uv run pvpi set-mcu-time
+uv run pvpi set-mcu-clock
 ```
 
 ## Install systemd monitoring

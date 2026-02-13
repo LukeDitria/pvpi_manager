@@ -52,6 +52,15 @@ class PvPiConfig(BaseSettings, extra="forbid"):
             return cls()
         ext = pathlib.Path(path).suffix
         if ext == ".json":
-            with open(path) as f:
-                return cls.model_validate(json.load(f))
+            config_path = Path(path)
+            if config_path.exists():
+                with open(path) as f:
+                    return cls.model_validate(json.load(f))
+            else:
+                config_path.parent.mkdir(parents=True, exist_ok=True)
+                data = cls().model_dump(mode='json')
+                with open(path, 'w') as f:
+                    json.dump(data, f, indent=2, default=str)
+                return cls
+
         raise ValueError(f"unsupported file type '{ext}'")

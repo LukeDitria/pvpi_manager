@@ -10,7 +10,7 @@ from pvpi.config import PvPiConfig
 from pvpi.logging_ import init_logging
 from pvpi.services import system_manager
 from pvpi.services.zmq_serial_proxy import ZmqSerialProxy
-from pvpi.systemd import install_systemd, uninstall_systemd
+from pvpi.systemd import install_systemd, uninstall_systemd, restart_systemd
 from pvpi.transports import SerialInterface
 
 logger = logging.getLogger("pvpi")
@@ -76,7 +76,7 @@ def connection_test():
 
 
 @cli.command()
-@click.option("--config", type=click.Path(exists=True, file_okay=True, dir_okay=False))
+@click.option("--config", type=click.Path(file_okay=True, dir_okay=False))
 def uart_proxy(config: str | None = None):
     _config = PvPiConfig.from_file(path=config)
     serial_interface = SerialInterface(port=_config.uart_port)
@@ -85,7 +85,7 @@ def uart_proxy(config: str | None = None):
 
 
 @cli.command()
-@click.option("--config", type=click.Path(exists=True, file_okay=True, dir_okay=False))
+@click.option("--config", type=click.Path(file_okay=True, dir_okay=False))
 def manager(config: str | None = None):
     _config = PvPiConfig.from_file(path=config)
     system_manager.run(config=_config)
@@ -102,6 +102,9 @@ def install(config: str | None = None):
 def uninstall():
     uninstall_systemd()
 
+@cli.command(short_help="Restart Pv Pi logger & UART proxy systemd services")
+def restart():
+    restart_systemd()
 
 if __name__ == "__main__":
     cli()

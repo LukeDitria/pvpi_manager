@@ -114,6 +114,12 @@ def install_systemd(config_path: Path | None = None) -> None:
 
     user = _get_username()
     project_dir = _get_project_dir()
+
+    # Create default path if no config path provided
+    if config_path is None:
+        config_path = project_dir / "config.json"
+        _logger.info("Saving default config file at %s", config_path)
+
     config_flag = f" --config {config_path}" if config_path else ""
 
     if project_dir:
@@ -156,3 +162,11 @@ def uninstall_systemd() -> None:
         _logger.info("%s uninstalled", name)
     subprocess.run(["systemctl", "daemon-reload"], check=True)
     _logger.info("Uninstall complete!")
+
+
+def restart_systemd() -> None:
+    _check_run_requirements()
+    target_dir = Path("/etc/systemd/system")
+    for name in _SERVICES:
+        subprocess.run(["systemctl", "restart", name], check=True)
+    _logger.info("Restart complete!")

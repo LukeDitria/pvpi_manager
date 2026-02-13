@@ -72,9 +72,15 @@ The following command will set the Pv Pi clock to match the system time of the m
 uv run pvpi set-mcu-clock
 ```
 
-## Install systemd monitoring
+## Install PV Pi Manager Service
 
-Pv Pi manager comes with an `install` command designed for simple Raspberry Pi systems. The installation places two system services that will run automatically upon every boot. There is:
+Pv Pi manager comes with an `install` command to setup an automatic PV Pi Manager Service that will handle power management and scheduling. 
+
+```shell
+uv run pvpi install
+```
+
+The installation places two system services that will run automatically upon every boot. There is:
 - The UART Proxy is a service that manages communications to the Pv PI for multiple applications attempting to do so at once. It holds onto the serial connection to the Pv Pi and proxies requests over network sockets.
 - The Manager services is a simple looping script that communicates, via the UART proxy, to the Pv Pi and logs metrics.
 
@@ -97,3 +103,11 @@ journalctl -u uart_server.service -f
 ```
 
 (i) `journalctl` is a Linux command-line tool for viewing and managing logs from `systemd`. Logs can be filtered by process and time. [Learn more](https://www.digitalocean.com/community/tutorials/how-to-use-journalctl-to-view-and-manipulate-systemd-logs).
+
+## Update PV Pi Manager config
+When you install the PV Pi Manager service a default config.json file will be created in the pvpi_manager directory. Subsequent restarts of the PV Pi Manager services will load configuration parameters from this config.json.
+
+You can change the behaviour of the PV Pi Manager services by editing and saving this file and restarting the PV Pi Manager services.
+```shell
+uv run pvpi restart
+```

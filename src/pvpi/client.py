@@ -37,7 +37,7 @@ PvPiChargeStateDescriptions = {
 
 
 class PvPiFaultState(IntFlag):
-    NA = 0
+    PvPiThermal = 0
     DrvSupPinVoltage = 1 << 0
     ChargeSafetyTimer = 1 << 1
     ThermalShutdown = 1 << 2
@@ -48,7 +48,7 @@ class PvPiFaultState(IntFlag):
 
 
 PvPiFaultStateDescriptions = {
-    PvPiFaultState.NA: "NA",
+    PvPiFaultState.PvPiThermal: "PV Pi Over Heating",
     PvPiFaultState.DrvSupPinVoltage: "DRV_SUP pin voltage",
     PvPiFaultState.ChargeSafetyTimer: "Charge safety timer",
     PvPiFaultState.ThermalShutdown: "Thermal shutdown",

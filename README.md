@@ -52,26 +52,6 @@ uv run pvpi  # show usage help
 uv run pvpi connection-test
 ```
 
-# Usage
-
-```python
-from pvpi import PvPiClient
-
-client = PvPiClient()
-print(client.get_alive())
-```
-
-Check out the [client.py](src/pvpi/client.py) for more details.
-
-## Set Pv Pi STM32 RTC clock time
-The Pv Pi's RTC can receive a "set clock" command using the SDK. You'll only need to do this once if you have a RTC backup battery connected to the Pv Pi. If you don't have a RTC backup battery then the RTC will loose time whenever the main battery power is disconnected.  
-
-The following command will set the Pv Pi clock to match the system time of the machine calling the command (give or take a second or so).
-
-```shell
-uv run pvpi set-mcu-clock
-```
-
 ## Install PV Pi Manager Service
 
 Pv Pi manager comes with an `install` command to setup an automatic PV Pi Manager Service that will handle power management and scheduling. 
@@ -86,7 +66,96 @@ The installation places two system services that will run automatically upon eve
 
 This is an optional installation. Each service can be run directly via the CLI, and neither are required to run in order to use the Pv Pi SDK. The serve as examples on which to base your own work.
 
-### More about systemd
+# Other CLI commands
+
+## Setting PV Pi STM32 RTC clock time
+The PV Pi's RTC can receive a "set clock" command using the SDK. You'll only need to do this once if you have a RTC backup battery connected to the PV Pi. If you don't have a RTC backup battery then the RTC will loose time whenever the main battery power is disconnected.  
+
+The following command will set the Pv Pi clock to match the system time of the machine calling the command (give or take a second or so).
+
+```shell
+uv run pvpi set-mcu-clock
+```
+
+## Restart PV Pi Systemd services
+Restarts both the Pv Pi Manager & UART proxy systemd service.
+```shell
+uv run pvpi restart
+```
+
+## Get the PV Pi Battery/Solar Statistics
+Prints out the current PV Pi temperature as well as Battery and Solar voltage and charge current.
+
+```shell
+uv run pvpi get-stats
+```
+
+## Get the BQ25756 charging State
+Prints out the current state of the BQ25756 charge cycle.
+
+```shell
+uv run pvpi get-charge-state
+```
+
+## Get Pv Pi Fault States
+Prints out the description of any current faults of the PV Pi/BQ25756.
+
+```shell
+uv run pvpi get-faults
+```
+
+## Set Pv Pi MPPT State
+Enable/Disable Pv Pi MPPT.
+
+With no flag MPPT will be disabled.
+```shell
+uv run pvpi set-mppt
+```
+
+With "enable" flag MPPT will be enabled.
+```shell
+uv run pvpi set-mppt --enable
+```
+
+## Set TS State 
+Enable/Disable BQ25756 Battery Temperature monitoring.
+
+With no flag Temperature monitoring will be disabled.
+```shell
+uv run pvpi set-ts
+```
+
+With "enable" flag Temperature monitoring will be enabled.
+```shell
+uv run pvpi set-ts --enable
+```
+## Set PV Pi Charging State
+Enable/Disable PV Pi battery charging.
+
+With no flag charging will be disabled.
+```shell
+uv run pvpi set-charging
+```
+
+With "enable" flag charging will be enabled.
+```shell
+uv run pvpi set-charging --enable
+```
+
+
+
+# Creating your own client node
+
+```python
+from pvpi import PvPiClient
+
+client = PvPiClient()
+print(client.get_alive())
+```
+
+Check out the [client.py](src/pvpi/client.py) for more details.
+
+# More about systemd
 
 (i) `systemd` is the standard system and service manager for modern Linux distributions. Once installed, you can check the `status`, `start`, `stop`, or `restart` these PV PI services using the `systemctl` command:
 ```shell
@@ -104,7 +173,7 @@ journalctl -u uart_server.service -f
 
 (i) `journalctl` is a Linux command-line tool for viewing and managing logs from `systemd`. Logs can be filtered by process and time. [Learn more](https://www.digitalocean.com/community/tutorials/how-to-use-journalctl-to-view-and-manipulate-systemd-logs).
 
-## Update PV Pi Manager config
+# Updating the PV Pi Manager config
 When you install the PV Pi Manager service a default config.json file will be created in the pvpi_manager directory. Subsequent restarts of the PV Pi Manager services will load configuration parameters from this config.json.
 
 You can change the behaviour of the PV Pi Manager services by editing and saving this file and restarting the PV Pi Manager services.

@@ -75,6 +75,66 @@ def connection_test():
     logger.info("PV PI Temp: %sC", temperature)
 
 
+@cli.command(short_help="Get Pv Pi Statistics")
+def get_stats():
+    client = PvPiClient()
+
+    logger.info("PV PI Battery and PV input...")
+    bat_v = client.get_battery_voltage()
+    bat_c = client.get_battery_current()
+    pv_v = client.get_pv_voltage()
+    pv_c = client.get_pv_current()
+    temperature = client.get_board_temp()
+    logger.info("Battery: %s V, %s A", bat_v, bat_c)
+    logger.info("PV: %s V, %s A", pv_v, pv_c)
+    logger.info("PV PI Temp: %sC", temperature)
+
+
+@cli.command(short_help="Get Pv Pi Fault States")
+def get_faults():
+    client = PvPiClient()
+    logger.info("PV PI Fault state: %s", client.get_fault_states())
+
+
+@cli.command(short_help="Get BQ25756 charging State")
+def get_charge_state():
+    client = PvPiClient()
+    logger.info("BQ25756 Charge state: %s", client.get_charge_state())
+
+
+@cli.command(short_help="Enable/Disable Pv Pi MPPT")
+@click.option("--enable", is_flag=True, help="Enable PV Pi MPPT.")
+def set_mppt(enable: bool = True):
+    state = "ON" if enable else "OFF"
+    logger.info("Setting PV PI MPPT "  + state)
+
+    client = PvPiClient()
+    client.set_mppt_state(state)
+    logger.info("PV PI MPPT State set to " + state)
+
+
+@cli.command(short_help="Enable/Disable Pv Pi Charging")
+@click.option("--enable", is_flag=True, help="Enable PV Pi Charging.")
+def set_charging(enable: bool = True):
+    state = "ON" if enable else "OFF"
+    logger.info("Setting PV PI Charging "  + state)
+
+    client = PvPiClient()
+    client.set_charge_state(state)
+    logger.info("PV PI Charging State set to " + state)
+
+
+@cli.command(short_help="Enable/Disable BQ25756 Battery Temperature monitoring.")
+@click.option("--enable", is_flag=True, help="Enable BQ25756 Battery Temperature monitoring.")
+def set_ts(enable: bool = True):
+    state = "ON" if enable else "OFF"
+    logger.info("Setting BQ25756 Temperature monitoring "  + state)
+
+    client = PvPiClient()
+    client.set_ts_state(state)
+    logger.info("BQ25756 Temperature monitoring State set to " + state)
+
+
 @cli.command()
 @click.option("--config", type=click.Path(file_okay=True, dir_okay=False))
 def uart_proxy(config: str | None = None):

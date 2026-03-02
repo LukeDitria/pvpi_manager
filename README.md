@@ -61,8 +61,11 @@ uv run pvpi install
 ```
 
 The installation places two system services that will run automatically upon every boot. There is:
-- The UART Proxy is a service that manages communications to the Pv PI for multiple applications attempting to do so at once. It holds onto the serial connection to the Pv Pi and proxies requests over network sockets.
-- The Manager services is a simple looping script that communicates, via the UART proxy, to the Pv Pi and logs metrics.
+- The UART Proxy is a service that manages communications to the PV PI for multiple applications attempting to do so at once. It holds onto the serial connection to the PV Pi and proxies requests over network sockets.
+- The Manager services is a simple looping script that communicates, via the UART proxy, to the PV Pi and logs metrics.
+- The Dashboard is a simple Streamlit based dashboard to display live PV Pi statistics
+as well as the historical data logs hosted on port 8501. Historical data log requires
+log_pvpi_stats to be enabled
 
 This is an optional installation. Each service can be run directly via the CLI, and neither are required to run in order to use the Pv Pi SDK. The serve as examples on which to base your own work.
 

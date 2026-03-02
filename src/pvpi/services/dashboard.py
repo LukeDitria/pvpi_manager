@@ -53,7 +53,7 @@ def plot_with_trend(series, color, label="Value", window=12):
 
     raw = series.rename("Raw Data")
     trend = series.rolling(window=window, center=True).mean().rename("Moving Average")
-    plot_df = pd.concat([trend, raw], axis=1).reset_index()
+    plot_df = pd.concat([raw, trend], axis=1).reset_index()
 
     plot_df = plot_df.melt(id_vars=plot_df.columns[0], 
                            var_name="Type", 
@@ -66,9 +66,14 @@ def plot_with_trend(series, color, label="Value", window=12):
             x=alt.X(plot_df.columns[0], title=""),
             y=alt.Y("Value", scale=alt.Scale(zero=False), title=label),
             color=alt.Color("Type", scale=alt.Scale(
-                domain=["Moving Average", "Raw Data"],
-                range=[color, f"{color}44"]
-            ))
+                domain=["Raw Data", "Moving Average"],
+                range=[f"{color}44", color]
+            )),
+            strokeWidth=alt.condition(
+                alt.datum.Type == "Raw Data",  # if moving average
+                alt.value(5),  # thicker line
+                alt.value(3)   # thin line for raw data
+            )
         )
     )
 

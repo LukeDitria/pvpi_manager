@@ -71,6 +71,24 @@ def _get_interface():
 
 
 class PvPiClient:
+    # Voltage → SoC lookup table for a 12v LiFePO4 battery
+    voltage_soc_table = [
+        (14.4, 100),
+        (13.6, 100),
+        (13.4, 99),
+        (13.3, 90),
+        (13.2, 80),
+        (13.1, 70),
+        (13.0, 60),
+        (12.9, 50),
+        (12.8, 40),
+        (12.7, 30),
+        (12.6, 20),
+        (12.5, 15),
+        (12.4, 10),
+        (12.0, 0),
+    ]
+
     def __init__(self, interface: BaseTransportInterface | None = None):
         self._interface = interface or _get_interface()
 
@@ -123,6 +141,28 @@ class PvPiClient:
         else:
             raise ValueError("Failed to read board temperature")
 
+    def estimated_soc(self) -> float:
+        """
+        Estimate State of Charge (SoC %) of a 12V (4S) LiFePO4 battery
+        from resting voltage using linear interpolation.
+        """
+
+        voltage = self.get_battery_voltage()
+
+        # Safety check
+        if not self.voltage_soc_table:
+            return 0.0
+
+        # Linear interpolation
+        for i in range(len(self.voltage_soc_table) - 1):
+            v1, soc1 = self.voltage_soc_table[i]
+            v2, soc2 = self.voltage_soc_table[i + 1]
+
+            if v2 <= voltage <= v1:
+                return round(soc2 + (soc1 - soc2) * (voltage - v2) / (v1 - v2), 2)
+
+        return 0.0
+        
     # ---------------------- Time Sync Commands ---------------------- #
     def set_mcu_time(self, dt: datetime | None = None):
         """Returns success bool for setting STM32 RTC"""

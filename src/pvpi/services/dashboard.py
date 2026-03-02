@@ -97,29 +97,33 @@ st.title("Historical PV Pi Data")
 if df_master is not None:
     # --- SIDEBAR: DATE FILTERING ---
     st.sidebar.header("📅 History Filter")
+
     min_date = df_master['Timestamp'].min().date()
     max_date = df_master['Timestamp'].max().date()
-    
-    # Default to showing the last 2 days
-    try:
-        selected_range = st.sidebar.date_input(
-            "Select Date Range",
-            value=(max_date - timedelta(days=2), max_date),
-            min_value=min_date,
-            max_value=max_date
-        )
-    except ValueError:
-        # Fallback if there is less than 2 days of data
-        selected_range = (min_date, max_date)
 
-    # Filter Logic
+    # Default to last 2 days, but clamp to available data
+    default_start = max(max_date - timedelta(days=2), min_date)
+    default_end = max_date
+
+    # If dataset has only 1 day, st.date_input must get a single date
+    if default_start == default_end:
+        date_input_value = default_start
+    else:
+        date_input_value = (default_start, default_end)
+
+    selected_range = st.sidebar.date_input(
+        "Select Date Range",
+        value=date_input_value,
+        min_value=min_date,
+        max_value=max_date
+    )
+
+    # Filter logic
     if isinstance(selected_range, tuple) and len(selected_range) == 2:
         start_date, end_date = selected_range
-        mask = (df_master['Timestamp'].dt.date >= start_date) & \
-               (df_master['Timestamp'].dt.date <= end_date)
-        df_filtered = df_master.loc[mask]
+        df_filtered = df_master[df_master['Timestamp'].dt.date.between(start_date, end_date)]
     else:
-        df_filtered = df_master
+        df_filtered = df_master[df_master['Timestamp'].dt.date == selected_range]
 
     # --- INDIVIDUAL PLOTS (Filtered) ---
     # Section 1: PV

@@ -10,7 +10,7 @@ from pvpi.config import PvPiConfig
 from pvpi.logging_ import init_logging
 from pvpi.services import system_manager
 from pvpi.services.zmq_serial_proxy import ZmqSerialProxy
-from pvpi.systemd import install_systemd, uninstall_systemd, restart_systemd
+from pvpi.systemd import install_systemd, uninstall_systemd, restart_systemd, run_dashboard
 from pvpi.transports import SerialInterface
 
 logger = logging.getLogger("pvpi")
@@ -67,10 +67,12 @@ def connection_test():
     logger.info("PV PI Battery and PV input...")
     bat_v = client.get_battery_voltage()
     bat_c = client.get_battery_current()
+    bat_soc = client.estimated_soc()
     pv_v = client.get_pv_voltage()
     pv_c = client.get_pv_current()
     temperature = client.get_board_temp()
     logger.info("Battery: %s V, %s A", bat_v, bat_c)
+    logger.info("Estimated Battery SoC: %s %%", bat_soc)
     logger.info("PV: %s V, %s A", pv_v, pv_c)
     logger.info("PV PI Temp: %sC", temperature)
 
@@ -82,10 +84,14 @@ def get_stats():
     logger.info("PV PI Battery and PV input...")
     bat_v = client.get_battery_voltage()
     bat_c = client.get_battery_current()
+    bat_soc = client.estimated_soc()
+
     pv_v = client.get_pv_voltage()
     pv_c = client.get_pv_current()
     temperature = client.get_board_temp()
     logger.info("Battery: %s V, %s A", bat_v, bat_c)
+    logger.info("Estimated Battery SoC: %s %%", bat_soc)
+
     logger.info("PV: %s V, %s A", pv_v, pv_c)
     logger.info("PV PI Temp: %sC", temperature)
 
@@ -149,6 +155,12 @@ def uart_proxy(config: str | None = None):
 def manager(config: str | None = None):
     _config = PvPiConfig.from_file(path=config)
     system_manager.run(config=_config)
+
+
+@cli.command(short_help="Launch the Streamlit web dashboard")
+@click.option("--config", type=click.Path(file_okay=True, dir_okay=False))
+def dashboard(config: str | None = None):
+    run_dashboard(config_path=config)
 
 
 @cli.command(short_help="Install Pv Pi logger & UART proxy as systemd services")

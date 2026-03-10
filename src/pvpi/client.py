@@ -245,6 +245,17 @@ class PvPiClient:
         if success != "OK":
             raise ValueError("Failed to set max charge current")
 
+    def set_max_input_current(self, current: float):
+        """Set the maximum input current for the PV PI"""
+        if current < 0.4 or current > 8:
+            raise ValueError(f"Current value {current} is invalid! Must be >0.4 and <8")
+        milliamps = current * 1000
+        cmd = f"SET_INPUT_MILLIAMPS,{milliamps}".encode()
+        resp = self._interface.write(cmd)
+        _, success = resp.split(",")
+        if success != "OK":
+            raise ValueError("Failed to set max charge current")
+
     # ---------------------- Fault and Status Commands ---------------------- #
     def get_charge_state_code(self) -> PvPiChargeState:
         """Get PV PI charge state"""

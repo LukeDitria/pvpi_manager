@@ -45,10 +45,12 @@ def run(config: PvPiConfig):
     _logger.info("Watchdog: %s", "On" if config.enable_watchdog else "Off")
     if config.enable_watchdog:
         client.set_watchdog(config.watchdog_period_mins)
-        # Subtract 10 Seconds to make sure watchdog is reset before timer elapses
-        watchdog_period_sec = (config.watchdog_period_mins * 60) - 10
+        # Make sure watchdog is reset twice every watchdog period
+        watchdog_period_sec = (config.watchdog_period_mins * 60)//2
         prev_watchdog_time = datetime.now() - timedelta(seconds=watchdog_period_sec)
         _logger.info("Watchdog polling interval set to %s min", config.watchdog_period_mins)
+    else:
+        client.stop_watchdog()
 
     client.set_wakeup_voltage(config.wake_up_volt)
     _logger.info("Wakeup Voltage set at: %sV", config.wake_up_volt)
@@ -107,7 +109,7 @@ def run(config: PvPiConfig):
                     _logger.info("Shutdown Voltage!")
                     break
 
-            time.sleep(30)
+            time.sleep(10)
     except Exception as err:
         _logger.warning("Exception raised %s", err)
         client.stop_watchdog()

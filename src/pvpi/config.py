@@ -46,6 +46,9 @@ class PvPiConfig(BaseSettings, extra="forbid"):
     time_pi2mcu: bool = Field(False, description="Set Pv Pi's MCU clock to match Raspberry Pi's clock on boot")
     time_mcu2pi: bool = Field(False, description="Set Raspberry Pi's clock to match Pv Pi's MCU clock on boot")
 
+    # Dashboard
+    full_dashboard: bool = Field(True, description="Plot out historical data as well as live stats")
+
     @classmethod
     def from_file(cls, path: str | None = None):
         if path is None:

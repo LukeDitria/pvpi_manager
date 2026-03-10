@@ -56,9 +56,20 @@ def run(config: PvPiConfig):
     try:
         while True:
             curr_time = datetime.now()
-            if config.schedule_time and curr_time.time() >= config.shutdown_time:
-                _logger.info("Shutdown Time!")
-                break
+            if config.schedule_time:
+                shutdown = config.shutdown_time
+                wakeup = config.wakeup_time
+
+                if shutdown < wakeup:
+                    # Same day: shutdown window is between shutdown_time and wakeup_time
+                    should_shutdown = shutdown <= curr_time.time() < wakeup
+                else:
+                    # Overnight: e.g. shutdown=23:00, wakeup=06:00
+                    should_shutdown = curr_time.time() >= shutdown or curr_time.time() < wakeup
+
+                if should_shutdown:
+                    _logger.info("Shutdown Time!")
+                    break
 
             sec_since_last_log = (curr_time - prev_time).seconds
             if sec_since_last_log >= log_period_sec:

@@ -61,8 +61,11 @@ uv run pvpi install
 ```
 
 The installation places two system services that will run automatically upon every boot. There is:
-- The UART Proxy is a service that manages communications to the Pv PI for multiple applications attempting to do so at once. It holds onto the serial connection to the Pv Pi and proxies requests over network sockets.
-- The Manager services is a simple looping script that communicates, via the UART proxy, to the Pv Pi and logs metrics.
+- The UART Proxy is a service that manages communications to the PV PI for multiple applications attempting to do so at once. It holds onto the serial connection to the PV Pi and proxies requests over network sockets.
+- The Manager services is a simple looping script that communicates, via the UART proxy, to the PV Pi and logs metrics.
+- The Dashboard is a simple Streamlit based dashboard to display live PV Pi statistics
+as well as the historical data logs hosted on port 8501. Historical data log requires
+log_pvpi_stats to be enabled
 
 This is an optional installation. Each service can be run directly via the CLI, and neither are required to run in order to use the Pv Pi SDK. The serve as examples on which to base your own work.
 
@@ -97,14 +100,28 @@ Prints out the current state of the BQ25756 charge cycle.
 uv run pvpi get-charge-state
 ```
 
-## Get Pv Pi Fault States
+## Get PV Pi Fault States
 Prints out the description of any current faults of the PV Pi/BQ25756.
 
 ```shell
 uv run pvpi get-faults
 ```
 
-## Set Pv Pi MPPT State
+## Set PV Pi Charge Current
+Set the Maximum charge current for the PV Pi (Must be less than 10 Amps)
+
+```shell
+uv run pvpi set-charge-current --current 5
+```
+
+## Set PV Pi Input Current
+Set the Maximum input current for the PV Pi (Must be less than 8 Amps)
+
+```shell
+uv run pvpi set-input-current --current 2
+```
+
+## Set PV Pi MPPT State
 Enable/Disable Pv Pi MPPT.
 
 With no flag MPPT will be disabled.
@@ -160,7 +177,14 @@ Check out the [client.py](src/pvpi/client.py) for more details.
 (i) `systemd` is the standard system and service manager for modern Linux distributions. Once installed, you can check the `status`, `start`, `stop`, or `restart` these PV PI services using the `systemctl` command:
 ```shell
 sudo systemctl status pvpi_manager.service
-sudo systemctl status uart_server.service
+sudo systemctl status pvpi_uart.service
+sudo systemctl status pvpi_dashboard.service
+```
+
+For example, to stop and disable the dashboard so it will no longer run on boot:
+```shell
+sudo systemctl stop pvpi_dashboard.service
+sudo systemctl disable pvpi_dashboard.service
 ```
 
 While the status of services can be viewed with `systemctl` as shown above, the log output can be followed using `journalctl`.
@@ -168,7 +192,8 @@ While the status of services can be viewed with `systemctl` as shown above, the 
 To follow the **live** log output from either service:
 ```shell
 journalctl -u pvpi_manager.service -f
-journalctl -u uart_server.service -f
+journalctl -u pvpi_uart.service -f
+journalctl -u pvpi_dashboard.service -f
 ```
 
 (i) `journalctl` is a Linux command-line tool for viewing and managing logs from `systemd`. Logs can be filtered by process and time. [Learn more](https://www.digitalocean.com/community/tutorials/how-to-use-journalctl-to-view-and-manipulate-systemd-logs).

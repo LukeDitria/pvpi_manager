@@ -8,7 +8,7 @@ from pathlib import Path
 
 from pvpi.utils import is_linux
 
-_SERVICES = ["pvpi_uart.service", "pvpi_manager.service"]
+_SERVICES = ["pvpi_uart.service", "pvpi_manager.service", "pvpi_dashboard.service"]
 
 _logger = logging.getLogger(__name__)
 
@@ -98,6 +98,25 @@ def _render_service(name: str, user: str, exec_start: str) -> str:
             "WantedBy=multi-user.target\n"
         )
 
+    if name == "pvpi_dashboard.service":
+        return (
+            "[Unit]\n"
+            "Description=PV PI Streamlit Dashboard\n"
+            "After=pvpi_manager.service\n"
+            "\n"
+            "[Service]\n"
+            "Type=simple\n"
+            f"User={user}\n"
+            f"Group={user}\n"
+            f"ExecStart={exec_start}\n"
+            "Restart=always\n"
+            "RestartSec=10\n"
+            "Environment=PYTHONUNBUFFERED=1\n" # Ensures logs show up in journalctl immediately
+            "\n"
+            "[Install]\n"
+            "WantedBy=multi-user.target\n"
+        )
+
     raise ValueError(f"unknown service: {name}")
 
 
@@ -139,9 +158,18 @@ def install_systemd(config_path: Path | None = None) -> None:
     target_dir = Path("/etc/systemd/system")
     target_dir.mkdir(parents=True, exist_ok=True)
 
+    # In your systemd.py loop:
     for name in _SERVICES:
-        cmd = "uart-proxy" if name == "pvpi_uart.service" else "manager"
-        (target_dir / name).write_text(_render_service(name, user, make_exec_start(cmd)))
+        if name == "pvpi_uart.service":
+            exec_start = make_exec_start("uart-proxy")
+        elif name == "pvpi_manager.service":
+            exec_start = make_exec_start("manager")
+        elif name == "pvpi_dashboard.service":
+            exec_start = make_exec_start("dashboard") 
+        else:
+            continue    
+
+        (target_dir / name).write_text(_render_service(name, user, exec_start))
 
     # Start systemd services
     subprocess.run(["systemctl", "daemon-reload"], check=True)
@@ -170,3 +198,28 @@ def restart_systemd() -> None:
     for name in _SERVICES:
         subprocess.run(["systemctl", "restart", name], check=True)
     _logger.info("Restart complete!")
+
+
+def run_dashboard(config_path: str | None = None) -> None:
+    _check_run_requirements()
+    uv = _get_uv()
+    project_dir = _get_project_dir()
+    
+    dashboard_script = Path(__file__).parent / "services" / "dashboard.py"
+    
+    env = os.environ.copy()
+    env.pop("VIRTUAL_ENV", None)
+    
+    if config_path:
+        env["PVPI_CONFIG_PATH"] = str(Path(config_path).resolve())
+
+    cmd = [
+        str(uv), "run", "--project", str(project_dir),
+        "streamlit", "run", str(dashboard_script),
+        "--server.headless", "true",
+        "--server.address", "0.0.0.0",
+        "--server.port", "8501"
+    ]
+    
+    _logger.info("Launching Streamlit dashboard...")
+    subprocess.run(cmd, env=env, check=True)

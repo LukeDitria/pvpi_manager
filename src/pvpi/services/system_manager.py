@@ -116,7 +116,7 @@ def run(config: PvPiConfig):
     else:
         _logger.info("Closing down...")
         client.stop_watchdog()
-         _logger.info("Watchdog stopped")
+        _logger.info("Watchdog stopped")
 
         if config.schedule_time:
             client.set_alarm(config.wakeup_time)

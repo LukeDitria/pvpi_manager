@@ -40,7 +40,6 @@ class PvPiConfig(BaseSettings, extra="forbid"):
     # Watchdog
     enable_watchdog: bool = Field(False, description="Enable power watchdog")
     watchdog_period_mins: int = Field(2, description="Watchdog inspection interval in minutes", gt=0)
-    disable_watchdog_on_shutdown: bool = Field(True, description="Disable power watchdog during shutdown")
 
     # Clocks
     time_pi2mcu: bool = Field(False, description="Set Pv Pi's MCU clock to match Raspberry Pi's clock on boot")

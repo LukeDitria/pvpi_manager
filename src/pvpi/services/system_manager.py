@@ -45,6 +45,9 @@ def run(config: PvPiConfig):
     _logger.info("Watchdog: %s", "On" if config.enable_watchdog else "Off")
     if config.enable_watchdog:
         client.set_watchdog(config.watchdog_period_mins)
+        # Subtract 10 Seconds to make sure watchdog is reset before timer elapses
+        watchdog_period_sec = (config.watchdog_period_mins * 60) - 10
+        prev_watchdog_time = datetime.now() - timedelta(seconds=watchdog_period_sec)
         _logger.info("Watchdog polling interval set to %s min", config.watchdog_period_mins)
 
     client.set_wakeup_voltage(config.wake_up_volt)
@@ -52,7 +55,8 @@ def run(config: PvPiConfig):
 
     # Pv Pi Logging loop
     log_period_sec = config.log_period * 60
-    prev_time = datetime.now() - timedelta(seconds=log_period_sec)
+    prev_log_time = datetime.now() - timedelta(seconds=log_period_sec)
+
     try:
         while True:
             curr_time = datetime.now()
@@ -71,9 +75,16 @@ def run(config: PvPiConfig):
                     _logger.info("Shutdown Time!")
                     break
 
-            sec_since_last_log = (curr_time - prev_time).seconds
+            if config.enable_watchdog:
+                sec_since_last_wd = (curr_time - prev_watchdog_time).seconds
+                if sec_since_last_wd >= watchdog_period_sec:
+                    is_alive = client.get_alive()
+                    _logger.info("Watchdog Alive: %s", is_alive)
+                    prev_watchdog_time = datetime.now()
+
+            sec_since_last_log = (curr_time - prev_log_time).seconds
             if sec_since_last_log >= log_period_sec:
-                prev_time = datetime.now()
+                prev_log_time = datetime.now()
 
                 is_alive = client.get_alive()
                 mcu_time = client.get_mcu_time()
@@ -104,12 +115,12 @@ def run(config: PvPiConfig):
         raise
     else:
         _logger.info("Closing down...")
+        client.stop_watchdog()
+        _logger.info("Watchdog stopped")
+
         if config.schedule_time:
             client.set_alarm(config.wakeup_time)
             _logger.info("Alarm set %s", config.wakeup_time)
-        if config.disable_watchdog_on_shutdown:
-            client.stop_watchdog()
-            _logger.info("Watchdog stopped")
         if config.power_off_on_shutdown:
             client.power_off(delay_s=config.power_off_delay)
             _logger.info("Powering off Pv Pi")

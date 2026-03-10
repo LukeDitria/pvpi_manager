@@ -128,68 +128,69 @@ def dashboard():
 
     st.divider()
 
-    # Historical data
-    st.title("Historical PV Pi Data")
-    df_master = load_all_data(csv_data_path)
+    if config.full_dashboard:
+        # Historical data
+        st.title("Historical PV Pi Data")
+        df_master = load_all_data(csv_data_path)
 
-    if df_master is None:
-        st.warning(
-            "Cannot display historical data — no log files found. "
-            "Please check your system path or enable log_pvpi_stats in config.json"
-        )
-        return
+        if df_master is None:
+            st.warning(
+                "Cannot display historical data — no log files found. "
+                "Please check your system path or enable log_pvpi_stats in config.json"
+            )
+            return
 
-    # Apply date filter
-    if selected_range is None:
-        return
+        # Apply date filter
+        if selected_range is None:
+            return
 
-    if isinstance(selected_range, tuple) and len(selected_range) == 2:
-        start_date, end_date = selected_range
-        df_filtered = df_master[df_master['Timestamp'].dt.date.between(start_date, end_date)]
-    else:
-        df_filtered = df_master[df_master['Timestamp'].dt.date == selected_range]
+        if isinstance(selected_range, tuple) and len(selected_range) == 2:
+            start_date, end_date = selected_range
+            df_filtered = df_master[df_master['Timestamp'].dt.date.between(start_date, end_date)]
+        else:
+            df_filtered = df_master[df_master['Timestamp'].dt.date == selected_range]
 
-    # Section 1: Solar Input
-    st.header("1. Solar Input")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.subheader("Input Voltage (V)")
-        plot_with_trend(df_filtered.set_index('Timestamp')['PV Voltage'], "#FFCC00", "Volts")
-    with col2:
-        st.subheader("Input Current (A)")
-        plot_with_trend(df_filtered.set_index('Timestamp')['PV Current'], "#FFAA00", "Amps")
-    with col3:
-        st.subheader("Input Power Estimate (W)")
-        pv_pwr = (
-            df_filtered.set_index('Timestamp')['PV Voltage'] *
-            df_filtered.set_index('Timestamp')['PV Current']
-        )
-        plot_with_trend(pv_pwr, "#FFAA00", "Watts")
+        # Section 1: Solar Input
+        st.header("1. Solar Input")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.subheader("Input Voltage (V)")
+            plot_with_trend(df_filtered.set_index('Timestamp')['PV Voltage'], "#FFCC00", "Volts")
+        with col2:
+            st.subheader("Input Current (A)")
+            plot_with_trend(df_filtered.set_index('Timestamp')['PV Current'], "#FFAA00", "Amps")
+        with col3:
+            st.subheader("Input Power Estimate (W)")
+            pv_pwr = (
+                df_filtered.set_index('Timestamp')['PV Voltage'] *
+                df_filtered.set_index('Timestamp')['PV Current']
+            )
+            plot_with_trend(pv_pwr, "#FFAA00", "Watts")
 
-    st.divider()
+        st.divider()
 
-    # Section 2: Battery Storage
-    st.header("2. Battery Storage")
-    col4, col5, col6 = st.columns(3)
-    with col4:
-        st.subheader("Battery Voltage (V)")
-        plot_with_trend(df_filtered.set_index('Timestamp')['Battery Voltage'], "#00CCFF", "Volts")
-    with col5:
-        st.subheader("Battery Charge Current (A)")
-        plot_with_trend(df_filtered.set_index('Timestamp')['Battery Current'], "#0077FF", "Amps")
-    with col6:
-        st.subheader("Battery Charge Power Estimate (W)")
-        batt_pwr = (
-            df_filtered.set_index('Timestamp')['Battery Voltage'] *
-            df_filtered.set_index('Timestamp')['Battery Current']
-        )
-        plot_with_trend(batt_pwr, "#0077FF", "Watts")
+        # Section 2: Battery Storage
+        st.header("2. Battery Storage")
+        col4, col5, col6 = st.columns(3)
+        with col4:
+            st.subheader("Battery Voltage (V)")
+            plot_with_trend(df_filtered.set_index('Timestamp')['Battery Voltage'], "#00CCFF", "Volts")
+        with col5:
+            st.subheader("Battery Charge Current (A)")
+            plot_with_trend(df_filtered.set_index('Timestamp')['Battery Current'], "#0077FF", "Amps")
+        with col6:
+            st.subheader("Battery Charge Power Estimate (W)")
+            batt_pwr = (
+                df_filtered.set_index('Timestamp')['Battery Voltage'] *
+                df_filtered.set_index('Timestamp')['Battery Current']
+            )
+            plot_with_trend(batt_pwr, "#0077FF", "Watts")
 
-    st.divider()
+        st.divider()
 
-    # Section 3: Thermal
-    st.header("3. PV Pi Thermal")
-    plot_with_trend(df_filtered.set_index('Timestamp')['PV PI Temperature'], "#FF4B4B", "Temp (°C)")
+        # Section 3: Thermal
+        st.header("3. PV Pi Thermal")
+        plot_with_trend(df_filtered.set_index('Timestamp')['PV PI Temperature'], "#FF4B4B", "Temp (°C)")
 
 
 dashboard()

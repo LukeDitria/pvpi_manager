@@ -107,6 +107,19 @@ def get_charge_state():
     client = PvPiClient()
     logger.info("BQ25756 Charge state: %s", client.get_charge_state())
 
+@cli.command(short_help="Set the maximum input current for the PV Pi")
+@click.option("--current", type=int, required=True, help="Maximum charge current in amps")
+def set_input_current(current: int):
+    client = PvPiClient()
+    client.set_max_input_current(current)
+    logger.info("PV Pi max input current set to: %s", current)
+
+@cli.command(short_help="Set the maximum battery charge current for the PV Pi")
+@click.option("--current", type=int, required=True, help="Maximum charge current in amps")
+def set_charge_current(current: int):
+    client = PvPiClient()
+    client.set_max_charge_current(current)
+    logger.info("PV Pi max battery charge current set to: %s", current)
 
 @cli.command(short_help="Enable/Disable Pv Pi MPPT")
 @click.option("--enable", is_flag=True, help="Enable PV Pi MPPT.")

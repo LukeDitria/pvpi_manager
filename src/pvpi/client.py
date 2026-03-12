@@ -37,14 +37,14 @@ PvPiChargeStateDescriptions = {
 
 
 class PvPiFaultState(IntFlag):
-    PvPiThermal = 0
-    DrvSupPinVoltage = 1 << 0
-    ChargeSafetyTimer = 1 << 1
-    ThermalShutdown = 1 << 2
-    BatteryOverVoltage = 1 << 3
-    BatteryOverCurrent = 1 << 4
-    InputOverVoltage = 1 << 5
-    InputUnderVoltage = 1 << 6
+    PvPiThermal = 1
+    DrvSupPinVoltage = 1 << 1
+    ChargeSafetyTimer = 1 << 2
+    ThermalShutdown = 1 << 3
+    BatteryOverVoltage = 1 << 4
+    BatteryOverCurrent = 1 << 5
+    InputOverVoltage = 1 << 6
+    InputUnderVoltage = 1 << 7
 
 
 PvPiFaultStateDescriptions = {
@@ -95,6 +95,12 @@ class PvPiClient:
     def get_alive(self) -> bool:
         """Return True if PV PI is responsive"""
         return self._interface.write(message=b"GET_ALIVE") == "ALIVE"
+
+    def get_device_version(self)-> tuple[str, str, str]:
+        """Return the device name and version"""
+        resp = self._interface.write(message=b"GET_VERSION")
+        _, device_name, hw_version, fw_version = resp.split(",")
+        return device_name, hw_version, fw_version
 
     def get_battery_voltage(self) -> float:
         """Read battery voltage (V)"""

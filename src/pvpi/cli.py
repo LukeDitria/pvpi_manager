@@ -41,6 +41,10 @@ def connection_test():
     client.set_mcu_time()
     mcu_time = client.get_mcu_time()
     logger.info("Alive: %s", is_alive)
+
+    device_name, hw_version, fw_version = client.get_device_version()
+    logger.info("Device name: %s, PCB version: %s, Firmware version: %s", device_name, hw_version, fw_version)
+
     logger.info("Current MCU time: %s", mcu_time)
     logger.info("System time: %s", datetime.now().strftime("%y-%m-%d %H:%M:%S"))
 
@@ -107,6 +111,12 @@ def get_charge_state():
     client = PvPiClient()
     logger.info("BQ25756 Charge state: %s", client.get_charge_state())
 
+@cli.command(short_help="Get PV Pi PCB and Firmwware version")
+def get_version():
+    client = PvPiClient()
+    device_name, hw_version, fw_version = client.get_device_version()
+    logger.info("Device name: %s, PCB version: %s, Firmware version: %s", device_name, hw_version, fw_version)
+    
 @cli.command(short_help="Set the maximum input current for the PV Pi")
 @click.option("--current", type=int, required=True, help="Maximum charge current in amps")
 def set_input_current(current: int):
